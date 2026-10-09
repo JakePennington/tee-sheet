@@ -4,7 +4,7 @@ Context for any AI assistant (or person) making changes to Tee Sheet. Setup step
 
 ## What it is
 
-A phone-first app for scheduling golf rounds: upcoming rounds, multiple tee times per round, each player's status (in / pending / out), guests invited by other players, and a "copy group text" summary.
+A phone-first app for scheduling golf rounds: upcoming rounds, multiple tee times per round, each player's status (in / pending / out), a list of regulars (marked by whether they're in men's league with the owner, who get preference), guests invited by other players, and an editable invite message (no player names) to copy and send to one person at a time.
 
 - Live site: https://jakepennington.github.io/tee-sheet/
 - Repo: https://github.com/JakePennington/tee-sheet (public, personal account)
@@ -24,16 +24,16 @@ A phone-first app for scheduling golf rounds: upcoming rounds, multiple tee time
 
 ## Data model
 
-One table, `public.rounds`:
+Two tables, `public.rounds` and `public.regulars`, with the same columns:
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | text, PK | Client-generated random id |
 | `user_id` | uuid | Owner; defaults to `auth.uid()` |
-| `data` | jsonb | The whole round (shape below) |
+| `data` | jsonb | The whole record (shapes below) |
 | `updated_at` | timestamptz | Mirrors `data.updatedAt` |
 
-`data` shape:
+Round `data` shape:
 
 ```json
 {
@@ -43,8 +43,8 @@ One table, `public.rounds`:
   "example": false,
   "teeTimes": [{"id": "t1", "time": "08:10"}],
   "players": [
-    {"id": "p1", "name": "Me", "status": "in", "teeTimeId": "t1", "guestOf": ""},
-    {"id": "p2", "name": "Ben", "status": "pending", "teeTimeId": "t1", "guestOf": "p1"}
+    {"id": "p1", "name": "Me", "regularId": "", "status": "in", "teeTimeId": "t1", "guestOf": ""},
+    {"id": "p2", "name": "Dave", "regularId": "g1", "status": "pending", "teeTimeId": "t1", "guestOf": ""}
   ],
   "createdAt": "2026-10-09T20:00:00.000Z",
   "updatedAt": "2026-10-09T20:00:00.000Z"
@@ -55,7 +55,17 @@ One table, `public.rounds`:
 - `status` is `in`, `pending` or `out`. Out players keep their `teeTimeId` but don't take a spot.
 - Each tee time holds 4 players (`SLOTS_PER_TEE`). Overbooking is allowed and shown as a warning.
 - `teeTimeId: ""` means no tee time yet. `guestOf` is another player's `id`, or `""` for the organizer's own invite.
-- `normalize()` in `index.html` fills defaults for missing fields, so **new fields can be added to `data` without a database migration**. Only add columns or tables when a query actually needs them.
+- `regularId` links a player to a regular; older players without one are matched to a regular by name (case-insensitive).
+
+Regular `data` shape:
+
+```json
+{"name": "Dave", "league": true, "createdAt": "...", "updatedAt": "..."}
+```
+
+- `league` means the person is in men's league with the owner. League members get a "League" badge, sort first among players with the same status, and appear first in the add-player quick picks (then by number of rounds played, then by name).
+
+- `normalize()` / `normalizeRegular()` in `index.html` fills defaults for missing fields, so **new fields can be added to `data` without a database migration**. Only add columns or tables when a query actually needs them.
 
 ## Security
 
@@ -66,7 +76,7 @@ One table, `public.rounds`:
 ## How the app works
 
 - **Storage modes:** if `config.js` has values, the app requires sign-in and uses Supabase (`storeMode = 'cloud'`). If both values are empty, it skips sign-in and saves to `localStorage` only (`storeMode = 'local'`), which is handy for testing without touching real data.
-- **Writes** are optimistic: the UI updates immediately, then a per-round queue sends one upsert at a time. A failed write shows a toast and refetches.
+- **Writes** are optimistic: the UI updates immediately, then a per-record queue sends one upsert at a time. `saveDoc(table, doc)` and `deleteDoc(table, id)` work for both tables; `TABLES` maps each table to its local-storage key and normalizer. A failed write shows a toast and refetches.
 - **Sync:** a Supabase Realtime subscription applies changes from other devices, and the app refetches whenever it becomes visible again. When both sides have a round, the newer `updatedAt` wins.
 - **Rendering:** plain functions build HTML strings (`renderList`, `renderRound`, `sheetHtml`). All user text goes through `esc()`. Clicks are handled by one delegated listener keyed on `data-action` attributes.
 - **Edits** happen in bottom sheets (`openSheet(kind, data)`). Confirmations are inline ("Tap again to delete"), not `confirm()` dialogs.
