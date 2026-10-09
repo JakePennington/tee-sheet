@@ -729,17 +729,12 @@ function noteHtml(p) {
 }
 const gripIcon = '<svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="4" r="1.6"/><circle cx="9" cy="4" r="1.6"/><circle cx="3" cy="10" r="1.6"/><circle cx="9" cy="10" r="1.6"/><circle cx="3" cy="16" r="1.6"/><circle cx="9" cy="16" r="1.6"/></g></svg>';
 function playerRow(r, p) {
-	const sub = [];
-	if (p.guestOf && nameOf(r, p.guestOf)) sub.push(`Guest of ${esc(nameOf(r, p.guestOf))}`);
-	const guests = r.players.filter(g => g.guestOf === p.id).length;
-	if (guests) sub.push(`Bringing ${guests} guest${guests > 1 ? 's' : ''}`);
 	const draggable = p.status !== 'out' && r.teeTimes.length > 0;
 	const tee = r.teeTimes.some(t => t.id === p.teeTimeId) ? p.teeTimeId : '';
 	return `<li class="player${p.status === 'out' ? ' is-out' : ''}" data-pid="${esc(p.id)}"${draggable ? ` data-tee="${esc(tee)}"` : ''}>
 		${draggable ? `<span class="grip" data-grip title="Drag to another tee time">${gripIcon}</span>` : ''}
 		<button class="p-main" data-action="edit-player" data-pid="${esc(p.id)}">
 			<span class="p-name">${esc(p.name)}${isLeague(p) ? '<span class="league">League</span>' : ''}</span>
-			${sub.length ? `<span class="p-sub">${sub.join(' · ')}</span>` : ''}
 			${noteHtml(p)}
 		</button>
 		<button class="pill ${p.status}" data-action="cycle" data-pid="${esc(p.id)}" aria-label="${esc(p.name)} is ${STATUS_LABEL[p.status]}. Tap to change.">${STATUS_LABEL[p.status]}</button>
@@ -867,13 +862,6 @@ function statusSeg(current) {
 		${['in', 'pending', 'out'].map(s => `<input type="radio" name="status" id="st-${s}" value="${s}"${current === s ? ' checked' : ''}><label for="st-${s}">${STATUS_LABEL[s]}</label>`).join('')}
 	</div></div>`;
 }
-function teeSelect(r, current, excludePid) {
-	const opts = r.teeTimes.map(t => {
-		const n = playersAt(r, t.id).filter(p => p.id !== excludePid).length;
-		return `<option value="${esc(t.id)}"${current === t.id ? ' selected' : ''}>${esc(fmtTime(t.time))} (${n} of ${SLOTS_PER_TEE})</option>`;
-	}).join('');
-	return `<div class="field"><label for="f-tee">Tee time</label><select class="input" id="f-tee" name="tee"><option value="">No tee time yet</option>${opts}</select></div>`;
-}
 
 function sheetHtml() {
 	if (sheet.kind === 'round') return roundSheet();
@@ -920,9 +908,8 @@ function inviteLabel() {
 }
 function invitePlayersSheet() {
 	const r = findRound(sheet.roundId);
-	const host = sheet.guestOf ? nameOf(r, sheet.guestOf) : '';
 	const available = rankedRegulars().filter(g => !onRound(r, g));
-	const showNew = !available.length || !!sheet.guestOf;
+	const showNew = !available.length;
 	const teeOpts = [
 		`<option value="auto"${sheet.tee === 'auto' ? ' selected' : ''}>Next open spot</option>`,
 		...r.teeTimes.map(t => `<option value="${esc(t.id)}"${sheet.tee === t.id ? ' selected' : ''}>${esc(fmtTime(t.time))} (${playersAt(r, t.id).length} of ${SLOTS_PER_TEE})</option>`),
@@ -931,7 +918,7 @@ function invitePlayersSheet() {
 	let list = '<p class="hint">Save golfers from the Golfers screen and they’ll show here to pick from.</p>';
 	if (available.length) list = `<section class="list-card picker"><ul class="slots" id="pickList">${pickRows(r)}</ul></section>`;
 	else if (regulars.length) list = '<p class="hint">All your golfers are already on this round.</p>';
-	return sheetHead(host ? `Invite ${host}’s guest` : 'Invite players') + `<form class="form" id="invitePlayersForm" novalidate>
+	return sheetHead('Invite players') + `<form class="form" id="invitePlayersForm" novalidate>
 		${available.length > 8 ? '<input class="input" type="search" id="f-search" placeholder="Search golfers" autocomplete="off" aria-label="Search golfers">' : ''}
 		${list}
 		<datalist id="nameList">${unsavedNames().filter(n => !r.players.some(p => sameName(p.name, n))).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>
@@ -939,8 +926,8 @@ function invitePlayersSheet() {
 		<div class="form" id="newPerson"${showNew ? '' : ' hidden'}>
 			<div class="field"><label for="f-name">Someone new</label><input class="input" id="f-name" list="nameList" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
 			<div class="checks">
-				<label class="check"><input type="checkbox" id="f-save"${sheet.guestOf ? '' : ' checked'}>Save to golfers</label>
-				<label class="check" id="leagueCheck"${sheet.guestOf ? ' hidden' : ''}><input type="checkbox" id="f-league">In men’s league</label>
+				<label class="check"><input type="checkbox" id="f-save" checked>Save to golfers</label>
+				<label class="check" id="leagueCheck"><input type="checkbox" id="f-league">In men’s league</label>
 			</div>
 		</div>
 		${r.teeTimes.length ? `<div class="field"><label for="f-tee">Tee time</label><select class="input" id="f-tee">${teeOpts}</select></div>` : ''}
@@ -965,7 +952,7 @@ function submitInvitePlayers() {
 	if (!invitees.length) return showErr('Pick at least one golfer, or type a name.');
 	const tee = $('f-tee')?.value ?? '';
 	editRound(r.id, x => invitees.forEach(i => {
-		x.players.push({id: uid(), name: i.name, regularId: i.regularId, status: 'pending', teeTimeId: tee === 'auto' ? firstOpenTee(x) : tee, guestOf: sheet.guestOf});
+		x.players.push({id: uid(), name: i.name, regularId: i.regularId, status: 'pending', teeTimeId: tee === 'auto' ? firstOpenTee(x) : tee});
 	}));
 	closeSheet();
 	toast(invitees.length === 1 ? `Invited ${invitees[0].name}` : `Invited ${invitees.length} players`);
@@ -1060,10 +1047,8 @@ function editPlayerSheet() {
 		<div class="field"><label for="f-name">Name</label><input class="input" id="f-name" name="name" autocomplete="off" autocapitalize="words" value="${esc(p.name)}"></div>
 		${statusSeg(p.status)}
 		<div class="field"><label for="f-note">Note</label><textarea class="input note-box" id="f-note" rows="2" placeholder="e.g. Needs the later tee time, or still confirming">${esc(p.note || '')}</textarea></div>
-		${teeSelect(r, r.teeTimes.some(t => t.id === p.teeTimeId) ? p.teeTimeId : '', p.id)}
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions"><button class="primary" type="submit">Save</button>
-			<button class="ghost" type="button" data-action="add-guest" data-pid="${esc(p.id)}">Invite a guest of ${esc(p.name)}</button>
 			<button class="danger-btn${sheet.armed ? ' armed' : ''}" type="button" data-action="remove-player">${sheet.armed ? `Tap again to remove ${esc(p.name)}` : 'Remove from round'}</button>
 		</div>
 	</form>`;
@@ -1134,7 +1119,7 @@ function submitRound() {
 		return;
 	}
 	const sorted = [...teeTimes].sort((a, b) => a.time.localeCompare(b.time));
-	const players = $('f-me').checked ? [{id: uid(), name: OWNER_NAME, status: 'in', teeTimeId: sorted[0]?.id ?? '', guestOf: ''}] : [];
+	const players = $('f-me').checked ? [{id: uid(), name: OWNER_NAME, status: 'in', teeTimeId: sorted[0]?.id ?? ''}] : [];
 	const round = {id: uid(), course, date, notes, teeTimes, players, example: false};
 	saveDoc('rounds', round);
 	closeSheet();
@@ -1150,11 +1135,10 @@ function submitEditPlayer() {
 	const r = findRound(sheet.roundId);
 	if (r.players.some(p => p.id !== sheet.pid && p.name.toLowerCase() === name.toLowerCase())) return showErr(`${name} is already on this round.`);
 	const status = $('sheet').querySelector('input[name="status"]:checked')?.value;
-	const teeTimeId = $('f-tee').value;
 	const note = $('f-note').value.trim();
 	editRound(r.id, x => {
 		const p = x.players.find(y => y.id === sheet.pid);
-		Object.assign(p, {name, status, teeTimeId, note});
+		Object.assign(p, {name, status, note});
 	});
 	closeSheet();
 }
@@ -1236,11 +1220,7 @@ document.addEventListener('click', ev => {
 		deleteDoc('rounds', id);
 		toast('Round deleted');
 	} else if (action === 'invite-players' && r) {
-		openSheet('invite-players', {roundId: r.id, tee: btn.dataset.tee, guestOf: '', selected: new Set()});
-	} else if (action === 'add-guest' && r) {
-		const host = r.players.find(p => p.id === btn.dataset.pid);
-		const hostTee = host?.teeTimeId && playersAt(r, host.teeTimeId).length < SLOTS_PER_TEE ? host.teeTimeId : 'auto';
-		openSheet('invite-players', {roundId: r.id, tee: hostTee, guestOf: btn.dataset.pid, selected: new Set()});
+		openSheet('invite-players', {roundId: r.id, tee: btn.dataset.tee, selected: new Set()});
 	} else if (action === 'show-new-person') {
 		$('newPerson').hidden = false;
 		btn.hidden = true;
@@ -1278,7 +1258,6 @@ document.addEventListener('click', ev => {
 		const name = nameOf(findRound(sheet.roundId), pid);
 		editRound(sheet.roundId, x => {
 			x.players = x.players.filter(p => p.id !== pid);
-			x.players.forEach(p => { if (p.guestOf === pid) p.guestOf = ''; });
 		});
 		closeSheet();
 		toast(`Removed ${name}`);

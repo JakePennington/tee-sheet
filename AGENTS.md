@@ -4,7 +4,7 @@ Context for any AI assistant (or person) making changes to Tee Sheet. Setup step
 
 ## What it is
 
-A phone-first app for scheduling golf rounds: upcoming rounds, multiple tee times per round, each player's status (in / pending / out), a saved list of golfers (ranked by how often they accept, and marked by whether they're in men's league with the owner), inviting several golfers to a round at once, importing golfers from a pasted list, dragging golfers between tee times, guests invited by other players, and a one-line invite text to copy and send to one person at a time.
+A phone-first app for scheduling golf rounds: upcoming rounds, multiple tee times per round, each player's status (in / pending / out), a saved list of golfers (ranked by how often they accept, and marked by whether they're in men's league with the owner), inviting several golfers to a round at once, importing golfers from a pasted list, dragging golfers between tee times, and a one-line invite text to copy and send to one person at a time.
 
 - Live site: https://jakepennington.github.io/tee-sheet/
 - Repo: https://github.com/JakePennington/tee-sheet (public, personal account)
@@ -44,8 +44,8 @@ Round `data` shape:
   "example": false,
   "teeTimes": [{"id": "t1", "time": "08:10"}],
   "players": [
-    {"id": "p1", "name": "Jake Pennington", "regularId": "", "status": "in", "teeTimeId": "t1", "guestOf": ""},
-    {"id": "p2", "name": "Dave", "regularId": "g1", "status": "pending", "teeTimeId": "t1", "guestOf": "", "note": "Needs the later tee time"}
+    {"id": "p1", "name": "Jake Pennington", "regularId": "", "status": "in", "teeTimeId": "t1"},
+    {"id": "p2", "name": "Dave", "regularId": "g1", "status": "pending", "teeTimeId": "t1", "note": "Needs the later tee time"}
   ],
   "createdAt": "2026-10-09T20:00:00.000Z",
   "updatedAt": "2026-10-09T20:00:00.000Z"
@@ -55,7 +55,8 @@ Round `data` shape:
 - `date` is a local calendar date (`YYYY-MM-DD`); `time` is 24-hour `HH:MM`.
 - `status` is `in`, `pending` or `out`. Out players keep their `teeTimeId` but don't take a spot.
 - Each tee time holds 4 players (`SLOTS_PER_TEE`). Overbooking is allowed and shown as a warning.
-- `teeTimeId: ""` means no tee time yet. `guestOf` is another player's `id` (set by "Invite a guest of…"), or `""` for the organizer's own invite.
+- `teeTimeId: ""` means no tee time yet. Tee times change only by dragging on the round page.
+- Older rounds may have a `guestOf` field from a removed guest feature; it's ignored.
 - Players saved with the old name `"Me"` are shown as `ownerName` by `normalize()` and saved with it on the next edit.
 - `note` is optional free text for that golfer on that round, shown under their name and edited from the player panel.
 - `regularId` links a player to a regular; older players without one are matched to a regular by name (case-insensitive).
@@ -83,7 +84,7 @@ Regular (golfer) `data` shape:
 - **Sync:** a Supabase Realtime subscription applies changes from other devices, and the app refetches whenever it becomes visible again. When both sides have a round, the newer `updatedAt` wins.
 - **Rendering:** plain functions build HTML strings (`renderList`, `renderRound`, `sheetHtml`). All user text goes through `esc()`. Clicks are handled by one delegated listener keyed on `data-action` attributes.
 - **Ranking** (`golferStats`, `rankedRegulars`): golfers are ordered by how many rounds they were **In** for (accepted), then by their most recent such round, then by name. The owner gives preference to golfers who play often and recently.
-- **Invite players** (`invitePlayersSheet`) lists golfers not already on the round as a ranked multi-select checklist. "Someone not in your golfers?" reveals a name field with Save to golfers / men's league options (shown up front only when inviting a guest or when no golfers are left). Invitees start as `pending`; "Next open spot" fills tee times in order with `firstOpenTee()`.
+- **Invite players** (`invitePlayersSheet`) lists golfers not already on the round as a ranked multi-select checklist. "Someone not in your golfers?" reveals a name field with Save to golfers / men's league options (shown up front only when no golfers are left). Invitees start as `pending`; "Next open spot" fills tee times in order with `firstOpenTee()`.
 - **Import list** (`importSheet`, `parseNameList`) splits pasted text on newlines, commas and semicolons, strips bullets, numbering and checkboxes, dedupes, skips existing golfers, and previews with per-name league toggles.
 - **Drag and drop** on a round: each golfer (not those marked Out) has a grip. Dragging it uses pointer events (`touch-action: none` on the grip only, so the page still scrolls normally). Drop on a golfer in another group to swap tee times, or on a group with room (or the "No tee time yet" zone that appears while dragging) to move them. `render()` is skipped while a drag is in progress.
 - **Updates:** `sw.js` serves page loads network-first. `reloadIfUpdated()` also fetches the page on open and whenever the app returns to the foreground, and reloads if the HTML changed since launch.
