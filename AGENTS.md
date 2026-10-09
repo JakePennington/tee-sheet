@@ -42,6 +42,7 @@ Round `data` shape:
   "date": "2026-10-17",
   "notes": "Carts booked for both groups.",
   "example": false,
+  "tentative": false,
   "teeTimes": [{"id": "t1", "time": "08:10"}],
   "players": [
     {"id": "p1", "name": "Jake Pennington", "regularId": "", "status": "in", "teeTimeId": "t1"},
@@ -52,11 +53,13 @@ Round `data` shape:
 }
 ```
 
+- `tentative: true` means the tee times aren't booked yet (gauging interest). Shown as a Tentative tag and notice with a "Mark as booked" button, and the invite text asks "you interested?" instead of "you in?". Missing means booked.
 - `date` is a local calendar date (`YYYY-MM-DD`); `time` is 24-hour `HH:MM`.
 - `status` is `in`, `pending` or `out`. Out players keep their `teeTimeId` but don't take a spot.
 - Each tee time holds 4 players (`SLOTS_PER_TEE`). Overbooking is allowed and shown as a warning.
 - `teeTimeId: ""` means no tee time yet. Tee times change only by dragging on the round page.
 - Older rounds may have a `guestOf` field from a removed guest feature; it's ignored.
+- New rounds always start with the owner (`ownerName`) as In on the first tee time; there's no "I'm playing" option. The owner removes themselves from the round if they won't play.
 - Players saved with the old name `"Me"` are shown as `ownerName` by `normalize()` and saved with it on the next edit.
 - `note` is optional free text for that golfer on that round, shown under their name and edited from the player panel.
 - `regularId` links a player to a regular; older players without one are matched to a regular by name (case-insensitive).

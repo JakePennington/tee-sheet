@@ -288,6 +288,11 @@ textarea.input { min-height: 80px; resize: vertical; }
 .seg input[value="in"]:checked + label { background: var(--in-bg); border-color: var(--in); color: var(--in); }
 .seg input[value="pending"]:checked + label { background: var(--pending-bg); border-color: var(--pending); color: var(--pending); }
 .seg input[value="out"]:checked + label { background: var(--out-bg); border-color: var(--out); color: var(--out); }
+.seg.two { grid-template-columns: repeat(2, 1fr); }
+.seg input[value="booked"]:checked + label { background: var(--in-bg); border-color: var(--in); color: var(--in); }
+.seg input[value="tentative"]:checked + label { background: var(--pending-bg); border-color: var(--pending); border-style: dashed; color: var(--pending); }
+.chip.tentative { background: transparent; color: var(--pending); border: 1.5px dashed var(--pending); padding: 1px 8px; }
+.tentative-note { margin: 12px 0 0; background: var(--pending-bg); border: 1.5px dashed var(--pending); color: var(--ink); }
 .times { display: grid; gap: 8px; }
 .time-row { display: flex; gap: 8px; }
 .time-row .input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
@@ -413,6 +418,7 @@ function normalize(r) {
 		date: r.date || todayStr(),
 		notes: r.notes || '',
 		example: !!r.example,
+		tentative: !!r.tentative,
 		teeTimes: Array.isArray(r.teeTimes) ? [...r.teeTimes].sort((a, b) => a.time.localeCompare(b.time)) : [],
 		players: (Array.isArray(r.players) ? r.players : []).map(p => (p.name === 'Me' ? {...p, name: OWNER_NAME} : p)),
 		createdAt: r.createdAt || '',
@@ -675,6 +681,7 @@ function meterHtml(r) {
 function cardHtml(r, past) {
 	const c = counts(r);
 	const chips = [
+		r.tentative ? '<span class="chip tentative">Tentative</span>' : '',
 		c.in ? `<span class="chip in">${c.in} in</span>` : '',
 		c.pending ? `<span class="chip pending">${c.pending} pending</span>` : '',
 		c.out ? `<span class="chip out">${c.out} out</span>` : '',
@@ -748,6 +755,7 @@ function renderRound(r) {
 	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Rounds</button><button class="link-btn" data-action="edit-round">Edit round</button>`;
 	let html = `<h1 class="course">${esc(r.course)}</h1>
 		<p class="when">${esc(fmtDate(r.date, {weekday: 'long', month: 'long', day: 'numeric'}))} · ${esc(relDay(r.date))}</p>
+		${r.tentative ? '<div class="notice tentative-note"><span><b>Tentative.</b> These tee times aren’t booked yet.</span><button data-action="mark-booked">Mark as booked</button></div>' : ''}
 		${r.notes ? `<p class="notes">${esc(r.notes)}</p>` : ''}
 		<div class="summary">
 			<div class="stat in"><b>${c.in}</b><span>In</span></div>
@@ -880,11 +888,14 @@ function roundSheet() {
 		<datalist id="courseList">${knownCourses().map(c => `<option value="${esc(c)}"></option>`).join('')}</datalist>
 		<div class="field"><label for="f-course">Course</label><input class="input" id="f-course" name="course" list="courseList" autocomplete="off" value="${esc(r?.course ?? '')}" placeholder="e.g. Pine Hollow Golf Club" ${r ? '' : 'data-autofocus'}></div>
 		<div class="field"><label for="f-date">Date</label><input class="input" type="date" id="f-date" name="date" value="${esc(r?.date ?? sheet.defaultDate)}"></div>
+		<div class="field"><span class="lbl" id="bookingLbl">Tee times are</span><div class="seg two" role="radiogroup" aria-labelledby="bookingLbl">
+			<input type="radio" name="booking" id="bk-booked" value="booked"${r?.tentative ? '' : ' checked'}><label for="bk-booked">Booked</label>
+			<input type="radio" name="booking" id="bk-tentative" value="tentative"${r?.tentative ? ' checked' : ''}><label for="bk-tentative">Tentative</label>
+		</div></div>
 		<div class="field"><span class="lbl">Tee times</span><div class="times">
 			${times.map((t, i) => `<div class="time-row"><input class="input" type="time" id="f-time-${esc(t.id)}" data-time-id="${esc(t.id)}" value="${esc(t.time)}" step="60" aria-label="Tee time ${i + 1}"><button class="x" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">×</button></div>`).join('')}
 			<button class="add-time" type="button" data-action="add-time">+ Add tee time</button>
 		</div></div>
-		${r ? '' : '<label class="check"><input type="checkbox" id="f-me" name="me" checked>I’m playing</label>'}
 		<div class="field"><label for="f-notes">Notes</label><textarea class="input" id="f-notes" name="notes" placeholder="Carts, green fees, who’s driving…">${esc(r?.notes ?? '')}</textarea></div>
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions"><button class="primary" type="submit">${r ? 'Save changes' : 'Create round'}</button>
@@ -1086,7 +1097,7 @@ function keepRoundDraft() {
 		course: $('f-course').value,
 		date: $('f-date').value,
 		notes: $('f-notes').value,
-		me: $('f-me')?.checked,
+		tentative: $('bk-tentative').checked,
 	};
 }
 function restoreRoundDraft() {
@@ -1094,7 +1105,7 @@ function restoreRoundDraft() {
 	$('f-course').value = sheet.draft.course;
 	$('f-date').value = sheet.draft.date;
 	$('f-notes').value = sheet.draft.notes;
-	if ($('f-me')) $('f-me').checked = sheet.draft.me;
+	$(sheet.draft.tentative ? 'bk-tentative' : 'bk-booked').checked = true;
 }
 
 function submitRound() {
@@ -1105,12 +1116,14 @@ function submitRound() {
 	if (!date) return showErr('Pick a date.');
 	const teeTimes = sheet.times.filter(t => t.time).map(t => ({id: t.id, time: t.time}));
 	const notes = $('f-notes').value.trim();
+	const tentative = $('bk-tentative').checked;
 	if (sheet.roundId) {
 		const keep = new Set(teeTimes.map(t => t.id));
 		editRound(sheet.roundId, r => {
 			r.course = course;
 			r.date = date;
 			r.notes = notes;
+			r.tentative = tentative;
 			r.teeTimes = teeTimes;
 			r.players.forEach(p => { if (p.teeTimeId && !keep.has(p.teeTimeId)) p.teeTimeId = ''; });
 		});
@@ -1119,8 +1132,8 @@ function submitRound() {
 		return;
 	}
 	const sorted = [...teeTimes].sort((a, b) => a.time.localeCompare(b.time));
-	const players = $('f-me').checked ? [{id: uid(), name: OWNER_NAME, status: 'in', teeTimeId: sorted[0]?.id ?? ''}] : [];
-	const round = {id: uid(), course, date, notes, teeTimes, players, example: false};
+	const players = [{id: uid(), name: OWNER_NAME, status: 'in', teeTimeId: sorted[0]?.id ?? ''}];
+	const round = {id: uid(), course, date, notes, tentative, teeTimes, players, example: false};
 	saveDoc('rounds', round);
 	closeSheet();
 	view = {name: 'round', roundId: round.id};
@@ -1146,6 +1159,7 @@ function submitEditPlayer() {
 function inviteText(r) {
 	const day = fmtDate(r.date, {weekday: 'short', month: 'short', day: 'numeric'});
 	const tee = r.teeTimes.find(t => t.id === firstOpenTee(r)) || r.teeTimes[0];
+	if (r.tentative) return `Thinking about playing ${r.course} on ${day}${tee ? ` around ${fmtTime(tee.time)}` : ''}, you interested?`;
 	return `Playing ${r.course} on ${day}${tee ? ` at ${fmtTime(tee.time)}` : ''}, you in?`;
 }
 
@@ -1221,6 +1235,9 @@ document.addEventListener('click', ev => {
 		toast('Round deleted');
 	} else if (action === 'invite-players' && r) {
 		openSheet('invite-players', {roundId: r.id, tee: btn.dataset.tee, selected: new Set()});
+	} else if (action === 'mark-booked' && r) {
+		editRound(r.id, x => { x.tentative = false; });
+		toast('Marked as booked');
 	} else if (action === 'show-new-person') {
 		$('newPerson').hidden = false;
 		btn.hidden = true;
