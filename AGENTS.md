@@ -56,9 +56,9 @@ Round `data` shape:
 
 - `tentative: true` means the tee times aren't booked yet (gauging interest). `bookOn` is an optional date when the tee times open for booking (cleared when booked). Shown as a Tentative / "Book Oct 10" / "Book now" tag on the home screen and a booking card with a "Mark booked" button on the round, and the invite text asks "you interested?" instead of "you in?". Missing means booked.
 - `date` is a local calendar date (`YYYY-MM-DD`); `time` is 24-hour `HH:MM`.
-- `status` is `in`, `pending` or `out`. Out players keep their `teeTimeId` but don't take a spot.
-- Each tee time holds 4 players (`SLOTS_PER_TEE`). Overbooking is allowed and shown as a warning.
-- `teeTimeId: ""` means no tee time yet. Tee times change only by dragging on the round page.
+- `status` is `in`, `pending` or `out`. **Only In players are in tee times.** Pending players show under "Waiting to hear back" and Out under "Can't make it". Status changes go through `setStatus()`: becoming In assigns their previous tee time if it has room, otherwise `firstOpenTee()`; becoming Pending or Out clears `teeTimeId`. Older rounds may have pending players with a `teeTimeId`; it's ignored for display and capacity.
+- Each tee time holds 4 In players (`SLOTS_PER_TEE`); open spots count only In players. Overbooking is allowed and shown as a warning.
+- `teeTimeId: ""` means no tee time yet. After a golfer is In, their tee time changes only by dragging on the round page.
 - Older rounds may have a `guestOf` field from a removed guest feature; it's ignored.
 - New rounds always start with the owner (`ownerName`) as In on the first tee time; there's no "I'm playing" option. The owner removes themselves from the round if they won't play.
 - Players saved with the old name `"Me"` are shown as `ownerName` by `normalize()` and saved with it on the next edit.
@@ -89,9 +89,9 @@ Regular (golfer) `data` shape:
 - **Sync:** a Supabase Realtime subscription applies changes from other devices, and the app refetches whenever it becomes visible again. When both sides have a round, the newer `updatedAt` wins.
 - **Rendering:** plain functions build HTML strings (`renderList`, `renderRound`, `sheetHtml`). All user text goes through `esc()`. Clicks are handled by one delegated listener keyed on `data-action` attributes.
 - **Ranking** (`golferStats`, `rankedRegulars`): golfers are ordered by how many rounds they were **In** for (accepted), then by their most recent such round, then by name. The owner gives preference to golfers who play often and recently.
-- **Invite players** (`invitePlayersSheet`) lists golfers not already on the round as a ranked multi-select checklist. "Someone not in your golfers?" reveals a name field with Save to golfers / men's league options (shown up front only when no golfers are left). Invitees start as `pending`; "Next open spot" fills tee times in order with `firstOpenTee()`.
+- **Invite players** (`invitePlayersSheet`) lists golfers not already on the round as a ranked multi-select checklist. "Someone not in your golfers?" reveals a name field with Save to golfers / men's league options (shown up front only when no golfers are left). Invitees start as `pending` with no tee time.
 - **Import list** (`importSheet`, `parseNameList`) splits pasted text on newlines, commas and semicolons, strips bullets, numbering and checkboxes, dedupes, skips existing golfers, and previews with per-name league toggles.
-- **Drag and drop** on a round: each golfer (not those marked Out) has a grip. Dragging it uses pointer events (`touch-action: none` on the grip only, so the page still scrolls normally). Drop on a golfer in another group to swap tee times, or on a group with room (or the "No tee time yet" zone that appears while dragging) to move them. `render()` is skipped while a drag is in progress.
+- **Drag and drop** on a round: every golfer has a grip. Dragging a Pending or Out golfer onto a tee time marks them **In** there (if dropped on a golfer, that golfer keeps In status but loses their tee time); the "No tee time yet" drop zone appears only when dragging an In golfer. Dragging it uses pointer events (`touch-action: none` on the grip only, so the page still scrolls normally). For In golfers, drop on a golfer in another group to swap tee times, or on a group with room (or the "No tee time yet" zone) to move them. `render()` is skipped while a drag is in progress.
 - **Updates:** `sw.js` serves page loads network-first. `reloadIfUpdated()` also fetches the page on open and whenever the app returns to the foreground, and reloads if the HTML changed since launch.
 - **Sign out** lives only on the Golfers screen footer.
 - **Edits** happen in bottom sheets (`openSheet(kind, data)`). Confirmations are inline ("Tap again to delete"), not `confirm()` dialogs.

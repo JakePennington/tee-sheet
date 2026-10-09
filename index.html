@@ -149,6 +149,10 @@ p { margin: 0; }
 .empty strong { color: var(--ink); font-size: 17px; }
 
 /* Round detail */
+.round-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.round-title { min-width: 0; }
+.edit-btn { flex: none; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; margin-top: 2px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--ink-2); font-weight: 600; font-size: 14px; }
+.edit-btn:hover { color: var(--accent); border-color: var(--accent); }
 .course { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: .01em; overflow-wrap: anywhere; }
 .when { color: var(--ink-2); margin-top: 4px; }
 .notes { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -213,7 +217,7 @@ body.is-dragging { -webkit-user-select: none; user-select: none; cursor: grabbin
 .player.drop-target { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
 .tee.drop-target { box-shadow: 0 0 0 2px var(--accent); }
 .drop-only { display: none; }
-body.is-dragging .drop-only { display: block; }
+body.drag-in .drop-only { display: block; }
 .drop-hint { margin: 0; padding: 14px; color: var(--ink-2); font-size: 14px; }
 .hint { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
 
@@ -456,16 +460,30 @@ function counts(r) {
 	const c = {in: 0, pending: 0, out: 0};
 	r.players.forEach(p => c[p.status]++);
 	const spots = r.teeTimes.length * SLOTS_PER_TEE;
-	return {...c, spots, open: spots - c.in - c.pending};
+	return {...c, spots, open: spots - c.in};
 }
 function playersAt(r, teeId) {
 	return r.players
-		.filter(p => p.teeTimeId === teeId && p.status !== 'out')
+		.filter(p => p.teeTimeId === teeId && p.status === 'in')
 		.sort(byStatusThenLeague);
 }
 function firstOpenTee(r) {
 	const tee = r.teeTimes.find(t => playersAt(r, t.id).length < SLOTS_PER_TEE);
 	return tee ? tee.id : '';
+}
+function setStatus(r, p, status) {
+	const prevTee = p.teeTimeId;
+	p.status = status;
+	p.teeTimeId = '';
+	if (status !== 'in') return;
+	const roomInPrev = r.teeTimes.some(t => t.id === prevTee) && playersAt(r, prevTee).length < SLOTS_PER_TEE;
+	p.teeTimeId = roomInPrev ? prevTee : firstOpenTee(r);
+}
+function statusToast(r, pid) {
+	const p = r.players.find(x => x.id === pid);
+	const tee = r.teeTimes.find(t => t.id === p.teeTimeId);
+	if (p.status !== 'in' || !r.teeTimes.length) return `${p.name}: ${STATUS_LABEL[p.status]}`;
+	return tee ? `${p.name}: In · ${fmtTime(tee.time)}` : `${p.name}: In · no open tee time`;
 }
 function nameOf(r, pid) {
 	return r.players.find(p => p.id === pid)?.name ?? '';
@@ -658,6 +676,7 @@ const icoCalendar = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none"
 const icoClock = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 const icoRemove = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const icoCheck = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const icoPencil = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
 const icoBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function render() {
@@ -768,9 +787,9 @@ function golferNoteHtml(g) {
 }
 const gripIcon = '<svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="4" r="1.6"/><circle cx="9" cy="4" r="1.6"/><circle cx="3" cy="10" r="1.6"/><circle cx="9" cy="10" r="1.6"/><circle cx="3" cy="16" r="1.6"/><circle cx="9" cy="16" r="1.6"/></g></svg>';
 function playerRow(r, p) {
-	const draggable = p.status !== 'out' && r.teeTimes.length > 0;
-	const tee = r.teeTimes.some(t => t.id === p.teeTimeId) ? p.teeTimeId : '';
-	return `<li class="player${p.status === 'out' ? ' is-out' : ''}" data-pid="${esc(p.id)}"${draggable ? ` data-tee="${esc(tee)}"` : ''}>
+	const draggable = r.teeTimes.length > 0;
+	const tee = p.status === 'in' && r.teeTimes.some(t => t.id === p.teeTimeId) ? p.teeTimeId : '';
+	return `<li class="player${p.status === 'out' ? ' is-out' : ''}" data-pid="${esc(p.id)}" data-status="${p.status}"${draggable ? ` data-tee="${esc(tee)}"` : ''}>
 		${draggable ? `<span class="grip" data-grip title="Drag to another tee time">${gripIcon}</span>` : ''}
 		<button class="p-main" data-action="edit-player" data-pid="${esc(p.id)}">
 			<span class="p-name">${esc(p.name)}${isLeague(p) ? '<span class="league">League</span>' : ''}</span>
@@ -780,8 +799,8 @@ function playerRow(r, p) {
 		<button class="pill ${p.status}" data-action="cycle" data-pid="${esc(p.id)}" aria-label="${esc(p.name)} is ${STATUS_LABEL[p.status]}. Tap to change.">${STATUS_LABEL[p.status]}</button>
 	</li>`;
 }
-function openSlot(tee, label) {
-	return `<li><button class="open-slot" data-action="invite-players" data-tee="${esc(tee)}"><span class="plus" aria-hidden="true">+</span>${label}</button></li>`;
+function openSlot(label) {
+	return `<li><button class="open-slot" data-action="invite-players"><span class="plus" aria-hidden="true">+</span>${label}</button></li>`;
 }
 function bookDue(r) {
 	return r.tentative && !!r.bookOn && daysUntil(r.bookOn) <= 0;
@@ -812,9 +831,14 @@ function bookingCard(r) {
 }
 function renderRound(r) {
 	const c = counts(r);
-	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Rounds</button><button class="link-btn" data-action="edit-round">Edit round</button>`;
-	let html = `<h1 class="course">${esc(r.course)}</h1>
-		<p class="when">${esc(fmtDate(r.date, {weekday: 'long', month: 'long', day: 'numeric'}))} · ${esc(relDay(r.date))}</p>
+	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Rounds</button>`;
+	let html = `<div class="round-head">
+			<div class="round-title">
+				<h1 class="course">${esc(r.course)}</h1>
+				<p class="when">${esc(fmtDate(r.date, {weekday: 'long', month: 'long', day: 'numeric'}))} · ${esc(relDay(r.date))}</p>
+			</div>
+			<button class="edit-btn" data-action="edit-round" aria-label="Edit round">${icoPencil}Edit</button>
+		</div>
 		${r.tentative ? bookingCard(r) : ''}
 		${r.notes ? `<p class="notes">${esc(r.notes)}</p>` : ''}
 		<div class="summary">
@@ -830,7 +854,7 @@ function renderRound(r) {
 		const over = ps.length > SLOTS_PER_TEE;
 		let open = '';
 		for (let i = ps.length; i < SLOTS_PER_TEE; i++) {
-			open += openSlot(t.id, 'Open spot');
+			open += openSlot('Open spot');
 		}
 		html += `<section class="tee" data-drop-tee="${esc(t.id)}" data-full="${ps.length >= SLOTS_PER_TEE}" aria-label="${esc(fmtTime(t.time))} tee time">
 			<div class="tee-head">
@@ -842,14 +866,20 @@ function renderRound(r) {
 	});
 
 	const teeIds = new Set(r.teeTimes.map(t => t.id));
-	const unassigned = r.players.filter(p => p.status !== 'out' && !teeIds.has(p.teeTimeId)).sort(byStatusThenLeague);
+	const unassigned = r.players.filter(p => p.status === 'in' && !teeIds.has(p.teeTimeId)).sort(byStatusThenLeague);
 	if (unassigned.length || !r.teeTimes.length) {
-		html += `<section class="tee"${r.teeTimes.length ? ' data-drop-tee=""' : ''}><div class="tee-head"><span class="tee-label">${r.teeTimes.length ? 'No tee time yet' : 'Players'}</span><span class="tee-fill">${unassigned.length}</span></div>
-			<ul class="slots">${unassigned.map(p => playerRow(r, p)).join('')}${!unassigned.length ? openSlot('', 'Invite the first player') : ''}</ul></section>`;
+		html += `<section class="tee"${r.teeTimes.length ? ' data-drop-tee=""' : ''}><div class="tee-head"><span class="tee-label">${r.teeTimes.length ? 'No tee time yet' : 'Playing'}</span><span class="tee-fill">${unassigned.length}</span></div>
+			<ul class="slots">${unassigned.map(p => playerRow(r, p)).join('')}${!unassigned.length ? openSlot('Invite players') : ''}</ul></section>`;
 		if (!r.teeTimes.length) html += '<p class="hint">Add tee times from “Edit round” to split players into groups of four.</p>';
 	} else {
 		html += `<section class="tee drop-only" data-drop-tee=""><div class="tee-head"><span class="tee-label">No tee time yet</span></div>
 			<p class="drop-hint">Drop here to take them off a tee time</p></section>`;
+	}
+
+	const pending = r.players.filter(p => p.status === 'pending').sort(byStatusThenLeague);
+	if (pending.length) {
+		html += `<section class="tee"><div class="tee-head"><span class="tee-label">Waiting to hear back</span><span class="tee-fill">${pending.length}</span></div>
+			<ul class="slots">${pending.map(p => playerRow(r, p)).join('')}</ul></section>`;
 	}
 
 	const out = r.players.filter(p => p.status === 'out');
@@ -863,7 +893,7 @@ function renderRound(r) {
 		<button class="ghost" data-action="add-tee">Add tee time</button>
 	</div>`;
 	$('main').innerHTML = html;
-	$('barInner').innerHTML = '<button class="primary" data-action="invite-players" data-tee="auto">Invite player</button>';
+	$('barInner').innerHTML = '<button class="primary" data-action="invite-players">Invite player</button>';
 	$('bar').hidden = false;
 }
 
@@ -986,11 +1016,6 @@ function invitePlayersSheet() {
 	const r = findRound(sheet.roundId);
 	const available = rankedRegulars().filter(g => !onRound(r, g));
 	const showNew = !available.length;
-	const teeOpts = [
-		`<option value="auto"${sheet.tee === 'auto' ? ' selected' : ''}>Next open spot</option>`,
-		...r.teeTimes.map(t => `<option value="${esc(t.id)}"${sheet.tee === t.id ? ' selected' : ''}>${esc(fmtTime(t.time))} (${playersAt(r, t.id).length} of ${SLOTS_PER_TEE})</option>`),
-		`<option value=""${sheet.tee === '' ? ' selected' : ''}>No tee time yet</option>`,
-	].join('');
 	let list = '<p class="hint">Save golfers from the Golfers screen and they’ll show here to pick from.</p>';
 	if (available.length) list = `<section class="list-card picker"><ul class="slots" id="pickList">${pickRows(r)}</ul></section>`;
 	else if (regulars.length) list = '<p class="hint">All your golfers are already on this round.</p>';
@@ -1006,7 +1031,7 @@ function invitePlayersSheet() {
 				<label class="check" id="leagueCheck"><input type="checkbox" id="f-league">In men’s league</label>
 			</div>
 		</div>
-		${r.teeTimes.length ? `<div class="field"><label for="f-tee">Tee time</label><select class="input" id="f-tee">${teeOpts}</select></div>` : ''}
+		<p class="hint">Invited golfers wait under “Waiting to hear back” and get a tee time when you mark them In.</p>
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions sticky"><button class="primary" type="submit" id="inviteBtn">${inviteLabel()}</button></div>
 	</form>`;
@@ -1026,9 +1051,8 @@ function submitInvitePlayers() {
 		if (!picked.some(x => x.id === g?.id)) invitees.push({name, regularId: g?.id ?? ''});
 	}
 	if (!invitees.length) return showErr('Pick at least one golfer, or type a name.');
-	const tee = $('f-tee')?.value ?? '';
 	editRound(r.id, x => invitees.forEach(i => {
-		x.players.push({id: uid(), name: i.name, regularId: i.regularId, status: 'pending', teeTimeId: tee === 'auto' ? firstOpenTee(x) : tee});
+		x.players.push({id: uid(), name: i.name, regularId: i.regularId, status: 'pending', teeTimeId: ''});
 	}));
 	closeSheet();
 	toast(invitees.length === 1 ? `Invited ${invitees[0].name}` : `Invited ${invitees.length} players`);
@@ -1228,7 +1252,8 @@ function submitEditPlayer() {
 	if (g && golferNote !== undefined && golferNote !== g.note) saveDoc('regulars', {...g, note: golferNote});
 	editRound(r.id, x => {
 		const p = x.players.find(y => y.id === sheet.pid);
-		Object.assign(p, {name, status, note});
+		Object.assign(p, {name, note});
+		if (status !== p.status) setStatus(x, p, status);
 	});
 	closeSheet();
 }
@@ -1311,7 +1336,7 @@ document.addEventListener('click', ev => {
 		deleteDoc('rounds', id);
 		toast('Round deleted');
 	} else if (action === 'invite-players' && r) {
-		openSheet('invite-players', {roundId: r.id, tee: btn.dataset.tee, selected: new Set()});
+		openSheet('invite-players', {roundId: r.id, selected: new Set()});
 	} else if (action === 'mark-booked' && r) {
 		editRound(r.id, x => {
 			x.tentative = false;
@@ -1360,17 +1385,11 @@ document.addEventListener('click', ev => {
 		toast(`Removed ${name}`);
 	} else if (action === 'cycle' && r) {
 		const pid = btn.dataset.pid;
-		let next = '';
 		editRound(r.id, x => {
 			const p = x.players.find(y => y.id === pid);
-			p.status = NEXT_STATUS[p.status];
-			next = p.status;
-			if (p.status !== 'out' && !x.teeTimes.some(t => t.id === p.teeTimeId)) {
-				p.teeTimeId = x.teeTimes.find(t => playersAt(x, t.id).length < SLOTS_PER_TEE)?.id ?? '';
-			}
+			setStatus(x, p, NEXT_STATUS[p.status]);
 		});
-		const name = nameOf(findRound(r.id), pid);
-		toast(`${name}: ${STATUS_LABEL[next]}`);
+		toast(statusToast(findRound(r.id), pid));
 	} else if (action === 'message' && r) {
 		openSheet('message', {roundId: r.id, text: inviteText(r)});
 	} else if (action === 'copy-message') {
@@ -1450,10 +1469,11 @@ document.addEventListener('change', ev => {
 /* Drag a golfer by its grip onto another golfer (swap tee times) or onto a group with room (move) */
 function dropTargetAt(x, y) {
 	const el = document.elementFromPoint(x, y);
-	const row = el?.closest('.player[data-tee]');
-	if (row && row.dataset.pid !== drag.pid && row.dataset.tee !== drag.fromTee) return {type: 'swap', el: row, pid: row.dataset.pid};
+	const confirming = drag.fromStatus !== 'in';
+	const row = el?.closest('.player[data-status="in"][data-tee]');
+	if (row && row.dataset.pid !== drag.pid && row.dataset.tee !== drag.fromTee && !(confirming && !row.dataset.tee)) return {type: 'swap', el: row, pid: row.dataset.pid};
 	const group = el?.closest('[data-drop-tee]');
-	if (group && group.dataset.dropTee !== drag.fromTee && group.dataset.full !== 'true') return {type: 'move', el: group, tee: group.dataset.dropTee};
+	if (group && group.dataset.dropTee !== drag.fromTee && group.dataset.full !== 'true' && !(confirming && !group.dataset.dropTee)) return {type: 'move', el: group, tee: group.dataset.dropTee};
 	return null;
 }
 function updateDropTarget() {
@@ -1475,11 +1495,11 @@ function dragScroll() {
 }
 function endDrag(commit) {
 	if (!drag) return;
-	const {pid, target, ghost, row} = drag;
+	const {pid, target, ghost, row, fromStatus} = drag;
 	ghost.remove();
 	row.classList.remove('is-dragging');
 	target?.el.classList.remove('drop-target');
-	document.body.classList.remove('is-dragging');
+	document.body.classList.remove('is-dragging', 'drag-in');
 	drag = null;
 	const r = findRound(view.roundId);
 	if (!commit || !target || !r) {
@@ -1487,18 +1507,20 @@ function endDrag(commit) {
 		return;
 	}
 	const name = nameOf(r, pid);
-	if (target.type === 'swap') {
-		editRound(r.id, x => {
-			const a = x.players.find(p => p.id === pid);
+	const other = target.type === 'swap' ? nameOf(r, target.pid) : '';
+	const destTee = target.type === 'swap' ? r.players.find(p => p.id === target.pid).teeTimeId : target.tee;
+	const teeLabel = r.teeTimes.find(t => t.id === destTee) ? fmtTime(r.teeTimes.find(t => t.id === destTee).time) : 'no tee time';
+	editRound(r.id, x => {
+		const a = x.players.find(p => p.id === pid);
+		if (target.type === 'swap') {
 			const b = x.players.find(p => p.id === target.pid);
-			[a.teeTimeId, b.teeTimeId] = [b.teeTimeId, a.teeTimeId];
-		});
-		toast(`Swapped ${name} and ${nameOf(r, target.pid)}`);
-	} else {
-		const tee = r.teeTimes.find(t => t.id === target.tee);
-		editRound(r.id, x => { x.players.find(p => p.id === pid).teeTimeId = target.tee; });
-		toast(`Moved ${name} to ${tee ? fmtTime(tee.time) : 'no tee time'}`);
-	}
+			b.teeTimeId = fromStatus === 'in' ? a.teeTimeId : '';
+		}
+		a.teeTimeId = destTee;
+		a.status = 'in';
+	});
+	if (fromStatus !== 'in') toast(other ? `${name}: In · ${teeLabel}. ${other} has no tee time yet.` : `${name}: In · ${teeLabel}`);
+	else toast(other ? `Swapped ${name} and ${other}` : `Moved ${name} to ${teeLabel}`);
 }
 
 document.addEventListener('pointerdown', ev => {
@@ -1516,7 +1538,8 @@ document.addEventListener('pointerdown', ev => {
 	grip.setPointerCapture(ev.pointerId);
 	row.classList.add('is-dragging');
 	document.body.classList.add('is-dragging');
-	drag = {pid: row.dataset.pid, fromTee: row.dataset.tee, row, ghost, offsetY: ev.clientY - rect.top, x: ev.clientX, y: ev.clientY, target: null};
+	if (row.dataset.status === 'in') document.body.classList.add('drag-in');
+	drag = {pid: row.dataset.pid, fromTee: row.dataset.tee, fromStatus: row.dataset.status, row, ghost, offsetY: ev.clientY - rect.top, x: ev.clientX, y: ev.clientY, target: null};
 	requestAnimationFrame(dragScroll);
 });
 document.addEventListener('pointermove', ev => {
