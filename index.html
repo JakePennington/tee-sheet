@@ -222,7 +222,8 @@ body.is-dragging .drop-only { display: block; }
 .tee-remove { flex: none; width: 32px; height: 32px; margin-right: -6px; display: grid; place-items: center; border: 0; border-radius: 999px; background: none; color: var(--ink-2); }
 .tee-remove:hover { color: var(--out); }
 .tee-remove.armed { width: auto; padding: 0 12px; background: var(--out); color: var(--surface); font-weight: 600; font-size: 13px; }
-.add-tee-btn { width: 100%; min-height: 48px; margin-top: 12px; border: 1.5px dashed var(--line-strong); border-radius: var(--radius); background: none; color: var(--accent); font-weight: 600; }
+.dashed-btn { width: 100%; min-height: 48px; border: 1.5px dashed var(--line-strong); border-radius: var(--radius); background: none; color: var(--accent); font-weight: 600; }
+.add-tee-btn { margin-top: 12px; }
 .ghost { min-height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-weight: 600; color: var(--accent); padding: 0 12px; }
 
 /* Bottom action bar */
@@ -254,14 +255,15 @@ body.is-dragging .drop-only { display: block; }
 	overscroll-behavior: contain;
 	background: var(--surface);
 	border-radius: 20px 20px 0 0;
-	padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+	--sheet-pb: calc(20px + env(safe-area-inset-bottom, 0px));
+	padding: 8px 16px var(--sheet-pb);
 	animation: rise .22s ease-out;
 }
 .sheet::before { content: ''; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 12px; }
 @keyframes rise { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
 @media (min-width: 640px) {
 	.sheet-wrap { align-items: center; }
-	.sheet { border-radius: 20px; padding-bottom: 20px; }
+	.sheet { border-radius: 20px; --sheet-pb: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
@@ -342,13 +344,12 @@ textarea.input { min-height: 80px; resize: vertical; }
 .sheet-actions.two { grid-template-columns: 1fr 1fr; }
 .sheet-actions .primary, .sheet-actions .secondary { box-shadow: none; }
 .sheet-actions.two .secondary { order: -1; }
-.sheet-actions.sticky { position: sticky; bottom: 0; z-index: 1; padding-block: 10px; background: var(--surface); border-top: 1px solid var(--line); }
+.sheet-actions.sticky { position: sticky; bottom: calc(-1 * var(--sheet-pb)); z-index: 1; margin: 0 -16px calc(-1 * var(--sheet-pb)); padding: 10px 16px var(--sheet-pb); background: var(--surface); border-top: 1px solid var(--line); }
 .primary[disabled] { opacity: .5; }
 .with-icon { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .text-link { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .send-row { padding-block: 6px; }
 .send-row.is-sent .text-link { background: var(--in-bg); color: var(--in); }
-.text-btn { justify-self: start; min-height: 40px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 600; }
 .message-box { min-height: 96px; line-height: 1.45; }
 .err { color: var(--out); font-size: 14px; }
 
@@ -885,7 +886,7 @@ function renderRound(r) {
 		</section>`;
 	});
 
-	html += '<button class="add-tee-btn" data-action="add-tee">+ Add tee time</button>';
+	html += '<button class="dashed-btn add-tee-btn" data-action="add-tee">+ Add tee time</button>';
 
 	const teeIds = new Set(r.teeTimes.map(t => t.id));
 	const unassigned = r.players.filter(p => p.status === 'in' && !teeIds.has(p.teeTimeId)).sort(byStatusThenLeague);
@@ -985,6 +986,9 @@ function closeSheet() {
 	$('sheetWrap').style.top = '';
 	$('sheetWrap').style.height = '';
 	$('sheet').innerHTML = '';
+	$('sheet').style.transform = '';
+	$('sheet').style.transition = '';
+	$('sheetWrap').querySelector('.scrim').style.opacity = '';
 	document.body.style.overflow = '';
 }
 function sheetHead(title) {
@@ -1034,9 +1038,9 @@ function roundSheet() {
 
 function pickRows(r) {
 	const stats = golferStats();
-	return rankedRegulars().filter(g => !onRound(r, g)).map(g => {
+	return rankedRegulars().filter(g => !onRound(r, g)).map((g, rank) => {
 		const on = sheet.selected.has(g.id);
-		return `<li><button type="button" class="pick-row${on ? ' on' : ''}" data-action="toggle-pick" data-gid="${esc(g.id)}" data-search="${esc(g.name.toLowerCase())}" aria-pressed="${on}">
+		return `<li data-rank="${rank}"><button type="button" class="pick-row${on ? ' on' : ''}" data-action="toggle-pick" data-gid="${esc(g.id)}" data-search="${esc(g.name.toLowerCase())}" aria-pressed="${on}">
 			<span class="tick" aria-hidden="true"></span>
 			<span class="pick-text"><span class="p-name">${esc(g.name)}${g.league ? '<span class="league">League</span>' : ''}</span><span class="p-sub">${playedLabel(stats(g))}</span>${golferNoteHtml(g)}</span>
 		</button></li>`;
@@ -1054,18 +1058,18 @@ function invitePlayersSheet() {
 	if (available.length) list = `<section class="list-card picker"><ul class="slots" id="pickList">${pickRows(r)}</ul></section>`;
 	else if (regulars.length) list = '<p class="hint">All your golfers are already on this round.</p>';
 	return sheetHead('Invite players') + `<form class="form" id="invitePlayersForm" novalidate>
-		${available.length > 8 ? '<input class="input" type="search" id="f-search" placeholder="Search golfers" autocomplete="off" aria-label="Search golfers">' : ''}
-		${list}
 		<datalist id="nameList">${unsavedNames().filter(n => !r.players.some(p => sameName(p.name, n))).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>
-		<button type="button" class="text-btn" id="showNewBtn" data-action="show-new-person"${showNew ? ' hidden' : ''}>Someone not in your golfers?</button>
+		<button type="button" class="dashed-btn" id="showNewBtn" data-action="show-new-person"${showNew ? ' hidden' : ''}>+ New golfer</button>
 		<div class="form" id="newPerson"${showNew ? '' : ' hidden'}>
-			<div class="field"><label for="f-name">Someone new</label><input class="input" id="f-name" list="nameList" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
+			<div class="field"><label for="f-name">New golfer</label><input class="input" id="f-name" list="nameList" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
 			<div class="checks">
 				<label class="check"><input type="checkbox" id="f-save" checked>Save to golfers</label>
 				<label class="check" id="leagueCheck"><input type="checkbox" id="f-league">In men’s league</label>
 			</div>
 		</div>
 		<p class="err" id="formErr" hidden></p>
+		${available.length > 8 ? '<input class="input" type="search" id="f-search" placeholder="Search golfers" autocomplete="off" aria-label="Search golfers">' : ''}
+		${list}
 		<div class="sheet-actions sticky"><button class="primary" type="submit" id="inviteBtn">${inviteLabel()}</button></div>
 	</form>`;
 }
@@ -1411,6 +1415,14 @@ document.addEventListener('click', ev => {
 		btn.classList.toggle('on', sheet.selected.has(id));
 		btn.setAttribute('aria-pressed', sheet.selected.has(id));
 		$('inviteBtn').textContent = inviteLabel();
+		const list = $('pickList');
+		const picked = li => (sheet.selected.has(li.firstElementChild.dataset.gid) ? 0 : 1);
+		[...list.children].sort((a, b) => picked(a) - picked(b) || a.dataset.rank - b.dataset.rank).forEach(li => list.appendChild(li));
+		if ($('f-search')?.value) {
+			$('f-search').value = '';
+			list.querySelectorAll('li').forEach(li => { li.hidden = false; });
+			list.scrollIntoView({block: 'nearest'});
+		}
 	} else if (action === 'edit-player' && r) {
 		openSheet('edit-player', {roundId: r.id, pid: btn.dataset.pid});
 	} else if (action === 'remove-player') {
@@ -1596,6 +1608,47 @@ document.addEventListener('pointermove', ev => {
 });
 document.addEventListener('pointerup', () => endDrag(true));
 document.addEventListener('pointercancel', () => endDrag(false));
+
+/* Swipe a sheet down to close it: from its header any time, or anywhere once it's scrolled to the top */
+let swipe = null;
+function setSwipe(dy, animate) {
+	$('sheet').style.transition = animate ? 'transform .2s ease-out' : 'none';
+	$('sheet').style.transform = dy ? `translateY(${dy}px)` : '';
+	$('sheetWrap').querySelector('.scrim').style.opacity = dy ? String(Math.max(0, 1 - dy / 500)) : '';
+}
+$('sheet').addEventListener('touchstart', ev => {
+	if (ev.touches.length !== 1 || ev.target.closest('input, textarea, select')) return;
+	if ($('sheet').scrollTop > 0 && !ev.target.closest('.sheet-head')) return;
+	swipe = {y: ev.touches[0].clientY, t: Date.now(), dy: 0};
+}, {passive: true});
+$('sheet').addEventListener('touchmove', ev => {
+	if (!swipe) return;
+	const dy = ev.touches[0].clientY - swipe.y;
+	if (!swipe.dy && dy <= 0) {
+		swipe = null;
+		return;
+	}
+	if (!swipe.dy && dy < 8) return;
+	ev.preventDefault();
+	swipe.dy = Math.max(0, dy);
+	setSwipe(swipe.dy, false);
+}, {passive: false});
+$('sheet').addEventListener('touchend', () => {
+	if (!swipe) return;
+	const {dy, t} = swipe;
+	swipe = null;
+	const flick = dy > 40 && dy / (Date.now() - t) > 0.6;
+	if (dy > $('sheet').offsetHeight / 3 || flick) {
+		setSwipe($('sheet').offsetHeight, true);
+		setTimeout(closeSheet, 200);
+	} else {
+		setSwipe(0, true);
+	}
+});
+$('sheet').addEventListener('touchcancel', () => {
+	swipe = null;
+	setSwipe(0, true);
+});
 
 document.addEventListener('keydown', ev => {
 	if (ev.key === 'Escape' && sheet) closeSheet();
