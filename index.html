@@ -213,7 +213,7 @@ body.is-dragging { -webkit-user-select: none; user-select: none; cursor: grabbin
 .player.drop-target { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
 .tee.drop-target { box-shadow: 0 0 0 2px var(--accent); }
 .drop-only { display: none; }
-body.drag-in .drop-only { display: block; }
+body.is-dragging .drop-only { display: block; }
 .drop-hint { margin: 0; padding: 14px; color: var(--ink-2); font-size: 14px; }
 .hint { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
 
@@ -343,8 +343,6 @@ textarea.input { min-height: 80px; resize: vertical; }
 .text-link { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .send-row { padding-block: 6px; }
 .send-row.is-sent .text-link { background: var(--in-bg); color: var(--in); }
-.sms-btn { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 50%; background: none; color: var(--accent); }
-.sms-btn:hover { background: var(--accent-soft); }
 .text-btn { justify-self: start; min-height: 40px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 600; }
 .message-box { min-height: 96px; line-height: 1.45; }
 .err { color: var(--out); font-size: 14px; }
@@ -798,29 +796,22 @@ const IS_APPLE = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
 function openMessages(text) {
 	location.href = `sms:${IS_APPLE ? '&' : '?'}body=${encodeURIComponent(text)}`;
 }
-function textedLabel(iso) {
-	const d = new Date(iso);
-	const day = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-	const n = daysUntil(day);
-	if (n === 0) return 'Texted today';
-	if (n === -1) return 'Texted yesterday';
-	return `Texted ${fmtDate(day, {month: 'short', day: 'numeric'})}`;
-}
 const gripIcon = '<svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="4" r="1.6"/><circle cx="9" cy="4" r="1.6"/><circle cx="3" cy="10" r="1.6"/><circle cx="9" cy="10" r="1.6"/><circle cx="3" cy="16" r="1.6"/><circle cx="9" cy="16" r="1.6"/></g></svg>';
 function playerRow(r, p) {
-	const draggable = r.teeTimes.length > 0;
 	const tee = p.status === 'in' && r.teeTimes.some(t => t.id === p.teeTimeId) ? p.teeTimeId : '';
-	return `<li class="player${p.status === 'out' ? ' is-out' : ''}" data-pid="${esc(p.id)}" data-status="${p.status}"${draggable ? ` data-tee="${esc(tee)}"` : ''}>
-		${draggable ? `<span class="grip" data-grip title="Drag to another tee time">${gripIcon}</span>` : ''}
+	return `<li class="player${p.status === 'out' ? ' is-out' : ''}" data-pid="${esc(p.id)}" data-status="${p.status}" data-tee="${esc(tee)}">
+		<span class="grip" data-grip title="Drag to a tee time or another section">${gripIcon}</span>
 		<button class="p-main" data-action="edit-player" data-pid="${esc(p.id)}">
 			<span class="p-name">${esc(p.name)}${isLeague(p) ? '<span class="league">League</span>' : ''}</span>
-			${p.status === 'pending' && p.textedAt ? `<span class="p-sub">${textedLabel(p.textedAt)}</span>` : ''}
 			${golferNoteHtml(regularFor(p))}
 			${noteHtml(p)}
 		</button>
-		${p.status === 'pending' ? `<button class="sms-btn" data-action="text-golfer" data-pid="${esc(p.id)}" aria-label="Text ${esc(p.name)} the invite">${icoMessage}</button>` : ''}
 		<button class="pill ${p.status}" data-action="cycle" data-pid="${esc(p.id)}" aria-label="${esc(p.name)} is ${STATUS_LABEL[p.status]}. Tap to change.">${STATUS_LABEL[p.status]}</button>
 	</li>`;
+}
+function dropZone(status, label, hint) {
+	return `<section class="tee drop-only" data-drop-status="${status}"${status === 'in' ? ' data-drop-tee=""' : ''}><div class="tee-head"><span class="tee-label">${label}</span></div>
+		<p class="drop-hint">${hint}</p></section>`;
 }
 function openSlot(label) {
 	return `<li><button class="open-slot" data-action="invite-players"><span class="plus" aria-hidden="true">+</span>${label}</button></li>`;
@@ -879,7 +870,7 @@ function renderRound(r) {
 		for (let i = ps.length; i < t.spots; i++) {
 			open += openSlot('Open spot');
 		}
-		html += `<section class="tee" data-drop-tee="${esc(t.id)}" data-full="${ps.length >= t.spots}" aria-label="${esc(fmtTime(t.time))} tee time">
+		html += `<section class="tee" data-drop-status="in" data-drop-tee="${esc(t.id)}" data-full="${ps.length >= t.spots}" aria-label="${esc(fmtTime(t.time))} tee time">
 			<div class="tee-head">
 				<span class="tee-time">${clock}<small>${mer}</small></span>
 				<span class="tee-fill${over ? ' over' : ''}">${over ? `${ps.length} booked, max ${t.spots}` : `${ps.length} of ${t.spots}`}${meterHtml({teeTimes: [t], players: ps})}</span>
@@ -894,24 +885,27 @@ function renderRound(r) {
 	const teeIds = new Set(r.teeTimes.map(t => t.id));
 	const unassigned = r.players.filter(p => p.status === 'in' && !teeIds.has(p.teeTimeId)).sort(byStatusThenLeague);
 	if (unassigned.length || !r.teeTimes.length) {
-		html += `<section class="tee"${r.teeTimes.length ? ' data-drop-tee=""' : ''}><div class="tee-head"><span class="tee-label">${r.teeTimes.length ? 'No tee time yet' : 'Playing'}</span><span class="tee-fill">${unassigned.length}</span></div>
+		html += `<section class="tee" data-drop-status="in" data-drop-tee=""><div class="tee-head"><span class="tee-label">${r.teeTimes.length ? 'No tee time yet' : 'Playing'}</span><span class="tee-fill">${unassigned.length}</span></div>
 			<ul class="slots">${unassigned.map(p => playerRow(r, p)).join('')}${!unassigned.length ? openSlot('Invite players') : ''}</ul></section>`;
 		if (!r.teeTimes.length) html += '<p class="hint">Add tee times from “Edit round” to split players into groups of four.</p>';
 	} else {
-		html += `<section class="tee drop-only" data-drop-tee=""><div class="tee-head"><span class="tee-label">No tee time yet</span></div>
-			<p class="drop-hint">Drop here to take them off a tee time</p></section>`;
+		html += dropZone('in', 'No tee time yet', 'Drop here to mark them In without a tee time');
 	}
 
 	const pending = r.players.filter(p => p.status === 'pending').sort(byStatusThenLeague);
 	if (pending.length) {
-		html += `<section class="tee"><div class="tee-head"><span class="tee-label">Waiting to hear back</span><span class="tee-fill">${pending.length}</span></div>
+		html += `<section class="tee" data-drop-status="pending"><div class="tee-head"><span class="tee-label">Waiting to hear back</span><span class="tee-fill">${pending.length}</span></div>
 			<ul class="slots">${pending.map(p => playerRow(r, p)).join('')}</ul></section>`;
+	} else {
+		html += dropZone('pending', 'Waiting to hear back', 'Drop here to mark them Pending');
 	}
 
 	const out = r.players.filter(p => p.status === 'out');
 	if (out.length) {
-		html += `<section class="tee"><div class="tee-head"><span class="tee-label">Can’t make it</span><span class="tee-fill">${out.length}</span></div>
+		html += `<section class="tee" data-drop-status="out"><div class="tee-head"><span class="tee-label">Can’t make it</span><span class="tee-fill">${out.length}</span></div>
 			<ul class="slots">${out.map(p => playerRow(r, p)).join('')}</ul></section>`;
+	} else {
+		html += dropZone('out', 'Can’t make it', 'Drop here to mark them Out');
 	}
 
 	html += `<div class="row-actions">
@@ -1380,19 +1374,10 @@ document.addEventListener('click', ev => {
 		});
 		toast('Marked as booked');
 	} else if (action === 'text-golfer') {
-		const pid = btn.dataset.pid;
-		const roundId = sheet?.roundId ?? view.roundId;
-		const fromSendList = sheet?.kind === 'send-invites';
-		openMessages(fromSendList ? sheet.text : inviteText(findRound(roundId)));
-		if (fromSendList) {
-			sheet.sent.add(pid);
-			btn.innerHTML = `${icoCheck}Texted`;
-			btn.closest('li').classList.add('is-sent');
-		}
-		editRound(roundId, x => {
-			const p = x.players.find(y => y.id === pid);
-			if (p) p.textedAt = new Date().toISOString();
-		});
+		openMessages(sheet.text);
+		sheet.sent.add(btn.dataset.pid);
+		btn.innerHTML = `${icoCheck}Texted`;
+		btn.closest('li').classList.add('is-sent');
 	} else if (action === 'text-message') {
 		openMessages(sheet.text);
 	} else if (action === 'show-new-person') {
@@ -1504,12 +1489,14 @@ document.addEventListener('change', ev => {
 /* Drag a golfer by its grip onto another golfer (swap tee times) or onto a group with room (move) */
 function dropTargetAt(x, y) {
 	const el = document.elementFromPoint(x, y);
-	const confirming = drag.fromStatus !== 'in';
-	const row = el?.closest('.player[data-status="in"][data-tee]');
-	if (row && row.dataset.pid !== drag.pid && row.dataset.tee !== drag.fromTee && !(confirming && !row.dataset.tee)) return {type: 'swap', el: row, pid: row.dataset.pid};
-	const group = el?.closest('[data-drop-tee]');
-	if (group && group.dataset.dropTee !== drag.fromTee && group.dataset.full !== 'true' && !(confirming && !group.dataset.dropTee)) return {type: 'move', el: group, tee: group.dataset.dropTee};
-	return null;
+	const row = el?.closest('.player[data-status="in"]');
+	if (row?.dataset.tee && row.dataset.pid !== drag.pid && row.dataset.tee !== drag.fromTee) return {type: 'swap', el: row, pid: row.dataset.pid};
+	const zone = el?.closest('[data-drop-status]');
+	if (!zone || zone.dataset.full === 'true') return null;
+	const status = zone.dataset.dropStatus;
+	const tee = zone.dataset.dropTee ?? '';
+	if (status === drag.fromStatus && tee === drag.fromTee) return null;
+	return {type: 'move', el: zone, status, tee};
 }
 function updateDropTarget() {
 	const target = dropTargetAt(drag.x, drag.y);
@@ -1534,7 +1521,7 @@ function endDrag(commit) {
 	ghost.remove();
 	row.classList.remove('is-dragging');
 	target?.el.classList.remove('drop-target');
-	document.body.classList.remove('is-dragging', 'drag-in');
+	document.body.classList.remove('is-dragging');
 	drag = null;
 	const r = findRound(view.roundId);
 	if (!commit || !target || !r) {
@@ -1543,19 +1530,22 @@ function endDrag(commit) {
 	}
 	const name = nameOf(r, pid);
 	const other = target.type === 'swap' ? nameOf(r, target.pid) : '';
+	const status = target.type === 'swap' ? 'in' : target.status;
 	const destTee = target.type === 'swap' ? r.players.find(p => p.id === target.pid).teeTimeId : target.tee;
-	const teeLabel = r.teeTimes.find(t => t.id === destTee) ? fmtTime(r.teeTimes.find(t => t.id === destTee).time) : 'no tee time';
+	const tee = r.teeTimes.find(t => t.id === destTee);
 	editRound(r.id, x => {
 		const a = x.players.find(p => p.id === pid);
 		if (target.type === 'swap') {
 			const b = x.players.find(p => p.id === target.pid);
 			b.teeTimeId = fromStatus === 'in' ? a.teeTimeId : '';
 		}
-		a.teeTimeId = destTee;
-		a.status = 'in';
+		a.status = status;
+		a.teeTimeId = status === 'in' ? destTee : '';
 	});
-	if (fromStatus !== 'in') toast(other ? `${name}: In · ${teeLabel}. ${other} has no tee time yet.` : `${name}: In · ${teeLabel}`);
-	else toast(other ? `Swapped ${name} and ${other}` : `Moved ${name} to ${teeLabel}`);
+	if (target.type === 'swap') toast(fromStatus === 'in' ? `Swapped ${name} and ${other}` : `${name}: In · ${fmtTime(tee.time)}. ${other} has no tee time yet.`);
+	else if (status !== 'in') toast(`${name}: ${STATUS_LABEL[status]}`);
+	else if (tee) toast(fromStatus === 'in' ? `Moved ${name} to ${fmtTime(tee.time)}` : `${name}: In · ${fmtTime(tee.time)}`);
+	else toast(r.teeTimes.length ? `${name}: In · no tee time yet` : `${name}: In`);
 }
 
 document.addEventListener('pointerdown', ev => {
@@ -1573,7 +1563,6 @@ document.addEventListener('pointerdown', ev => {
 	grip.setPointerCapture(ev.pointerId);
 	row.classList.add('is-dragging');
 	document.body.classList.add('is-dragging');
-	if (row.dataset.status === 'in') document.body.classList.add('drag-in');
 	drag = {pid: row.dataset.pid, fromTee: row.dataset.tee, fromStatus: row.dataset.status, row, ghost, offsetY: ev.clientY - rect.top, x: ev.clientX, y: ev.clientY, target: null};
 	requestAnimationFrame(dragScroll);
 });
