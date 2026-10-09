@@ -171,7 +171,7 @@ p { margin: 0; }
 .tee-time { font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
 .tee-time small { font-size: 16px; font-weight: 600; margin-left: 3px; letter-spacing: .05em; color: var(--ink-2); }
 .tee-label { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .08em; text-transform: uppercase; }
-.tee-fill { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.tee-fill { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .tee-fill.over { color: var(--out); font-weight: 600; }
 .slots { list-style: none; margin: 0; padding: 0; }
 .slots li + li { border-top: 1px solid var(--line); }
@@ -217,7 +217,11 @@ body.drag-in .drop-only { display: block; }
 .drop-hint { margin: 0; padding: 14px; color: var(--ink-2); font-size: 14px; }
 .hint { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
 
-.row-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.row-actions { display: grid; gap: 10px; margin-top: 18px; }
+.tee-remove { flex: none; width: 32px; height: 32px; margin-right: -6px; display: grid; place-items: center; border: 0; border-radius: 999px; background: none; color: var(--ink-2); }
+.tee-remove:hover { color: var(--out); }
+.tee-remove.armed { width: auto; padding: 0 12px; background: var(--out); color: var(--surface); font-weight: 600; font-size: 13px; }
+.add-tee-btn { width: 100%; min-height: 48px; margin-top: 12px; border: 1.5px dashed var(--line-strong); border-radius: var(--radius); background: none; color: var(--accent); font-weight: 600; }
 .ghost { min-height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-weight: 600; color: var(--accent); padding: 0 12px; }
 
 /* Bottom action bar */
@@ -388,6 +392,7 @@ let view = {name: 'list', roundId: null};
 let showPast = false;
 let sheet = null;
 let drag = null;
+let armedTee = null;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -878,10 +883,13 @@ function renderRound(r) {
 			<div class="tee-head">
 				<span class="tee-time">${clock}<small>${mer}</small></span>
 				<span class="tee-fill${over ? ' over' : ''}">${over ? `${ps.length} booked, max ${t.spots}` : `${ps.length} of ${t.spots}`}${meterHtml({teeTimes: [t], players: ps})}</span>
+				<button class="tee-remove${armedTee === t.id ? ' armed' : ''}" data-action="remove-tee" data-tee="${esc(t.id)}" aria-label="Remove the ${esc(fmtTime(t.time))} tee time">${armedTee === t.id ? 'Remove?' : icoRemove}</button>
 			</div>
 			<ul class="slots">${ps.map(p => playerRow(r, p)).join('')}${open}</ul>
 		</section>`;
 	});
+
+	html += '<button class="add-tee-btn" data-action="add-tee">+ Add tee time</button>';
 
 	const teeIds = new Set(r.teeTimes.map(t => t.id));
 	const unassigned = r.players.filter(p => p.status === 'in' && !teeIds.has(p.teeTimeId)).sort(byStatusThenLeague);
@@ -908,7 +916,6 @@ function renderRound(r) {
 
 	html += `<div class="row-actions">
 		<button class="ghost" data-action="message">Invite text</button>
-		<button class="ghost" data-action="add-tee">Add tee time</button>
 	</div>`;
 	$('main').innerHTML = html;
 	$('barInner').innerHTML = '<button class="primary" data-action="invite-players">Invite player</button>';
@@ -1281,8 +1288,12 @@ function toast(msg) {
 /* Events */
 document.addEventListener('click', ev => {
 	const btn = ev.target.closest('[data-action]');
+	const action = btn?.dataset.action;
+	if (armedTee && action !== 'remove-tee') {
+		armedTee = null;
+		render();
+	}
 	if (!btn) return;
-	const action = btn.dataset.action;
 	const r = view.name === 'round' ? findRound(view.roundId) : null;
 
 	if (action === 'open') {
@@ -1311,7 +1322,28 @@ document.addEventListener('click', ev => {
 		openSheet('round', {roundId: r.id, times: r.teeTimes.map(t => ({...t}))});
 	} else if (action === 'add-tee' && r) {
 		const last = r.teeTimes[r.teeTimes.length - 1]?.time;
-		openSheet('round', {roundId: r.id, times: [...r.teeTimes.map(t => ({...t})), {id: uid(), time: last ? addMinutes(last, 10) : '08:00', spots: MAX_SPOTS}]});
+		const time = last ? addMinutes(last, 10) : '08:00';
+		editRound(r.id, x => { x.teeTimes.push({id: uid(), time, spots: MAX_SPOTS}); });
+		toast(`Added the ${fmtTime(time)} tee time`);
+	} else if (action === 'remove-tee' && r) {
+		const tee = r.teeTimes.find(t => t.id === btn.dataset.tee);
+		if (armedTee !== tee.id) {
+			armedTee = tee.id;
+			render();
+			setTimeout(() => {
+				if (armedTee !== tee.id) return;
+				armedTee = null;
+				render();
+			}, 4000);
+			return;
+		}
+		armedTee = null;
+		const moved = playersAt(r, tee.id).length;
+		editRound(r.id, x => {
+			x.teeTimes = x.teeTimes.filter(t => t.id !== tee.id);
+			x.players.forEach(p => { if (p.teeTimeId === tee.id) p.teeTimeId = ''; });
+		});
+		toast(moved ? `Removed ${fmtTime(tee.time)}. ${moved} golfer${moved === 1 ? '' : 's'} moved to No tee time yet.` : `Removed the ${fmtTime(tee.time)} tee time`);
 	} else if (action === 'add-time') {
 		readRoundTimes();
 		keepRoundDraft();
