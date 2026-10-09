@@ -336,6 +336,12 @@ textarea.input { min-height: 80px; resize: vertical; }
 .sheet-actions.two .secondary { order: -1; }
 .sheet-actions.sticky { position: sticky; bottom: 0; z-index: 1; padding-block: 10px; background: var(--surface); border-top: 1px solid var(--line); }
 .primary[disabled] { opacity: .5; }
+.with-icon { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.text-link { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.send-row { padding-block: 6px; }
+.send-row.is-sent .text-link { background: var(--in-bg); color: var(--in); }
+.sms-btn { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 50%; background: none; color: var(--accent); }
+.sms-btn:hover { background: var(--accent-soft); }
 .text-btn { justify-self: start; min-height: 40px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 600; }
 .message-box { min-height: 96px; line-height: 1.45; }
 .err { color: var(--out); font-size: 14px; }
@@ -675,6 +681,7 @@ const icoClock = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" st
 const icoRemove = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const icoCheck = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const icoPencil = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
+const icoMessage = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5c0 4.1-3.6 7.5-8 7.5-1.2 0-2.3-.2-3.3-.6L4 19.5l1.2-3.6C4.4 14.6 4 13.1 4 11.5 4 7.4 7.6 4 12 4s8 3.4 8 7.5z"/></svg>';
 const icoBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function render() {
@@ -783,6 +790,27 @@ function noteHtml(p) {
 function golferNoteHtml(g) {
 	return g?.note ? `<span class="p-note g-note">${esc(g.note)}</span>` : '';
 }
+const IS_APPLE = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+async function shareText(text) {
+	if (navigator.share) {
+		try {
+			await navigator.share({text});
+			return true;
+		} catch (shareErr) {
+			if (shareErr?.name === 'AbortError') return false;
+		}
+	}
+	location.href = `sms:${IS_APPLE ? '&' : '?'}body=${encodeURIComponent(text)}`;
+	return true;
+}
+function textedLabel(iso) {
+	const d = new Date(iso);
+	const day = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+	const n = daysUntil(day);
+	if (n === 0) return 'Texted today';
+	if (n === -1) return 'Texted yesterday';
+	return `Texted ${fmtDate(day, {month: 'short', day: 'numeric'})}`;
+}
 const gripIcon = '<svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="4" r="1.6"/><circle cx="9" cy="4" r="1.6"/><circle cx="3" cy="10" r="1.6"/><circle cx="9" cy="10" r="1.6"/><circle cx="3" cy="16" r="1.6"/><circle cx="9" cy="16" r="1.6"/></g></svg>';
 function playerRow(r, p) {
 	const draggable = r.teeTimes.length > 0;
@@ -791,9 +819,11 @@ function playerRow(r, p) {
 		${draggable ? `<span class="grip" data-grip title="Drag to another tee time">${gripIcon}</span>` : ''}
 		<button class="p-main" data-action="edit-player" data-pid="${esc(p.id)}">
 			<span class="p-name">${esc(p.name)}${isLeague(p) ? '<span class="league">League</span>' : ''}</span>
+			${p.status === 'pending' && p.textedAt ? `<span class="p-sub">${textedLabel(p.textedAt)}</span>` : ''}
 			${golferNoteHtml(regularFor(p))}
 			${noteHtml(p)}
 		</button>
+		${p.status === 'pending' ? `<button class="sms-btn" data-action="text-golfer" data-pid="${esc(p.id)}" aria-label="Text ${esc(p.name)} the invite">${icoMessage}</button>` : ''}
 		<button class="pill ${p.status}" data-action="cycle" data-pid="${esc(p.id)}" aria-label="${esc(p.name)} is ${STATUS_LABEL[p.status]}. Tap to change.">${STATUS_LABEL[p.status]}</button>
 	</li>`;
 }
@@ -964,6 +994,7 @@ function sheetHtml() {
 	if (sheet.kind === 'invite-players') return invitePlayersSheet();
 	if (sheet.kind === 'edit-player') return editPlayerSheet();
 	if (sheet.kind === 'message') return messageSheet();
+	if (sheet.kind === 'send-invites') return sendInvitesSheet();
 	if (sheet.kind === 'regular') return regularSheet();
 	return '';
 }
@@ -1047,11 +1078,11 @@ function submitInvitePlayers() {
 		if (!picked.some(x => x.id === g?.id)) invitees.push({name, regularId: g?.id ?? ''});
 	}
 	if (!invitees.length) return showErr('Pick at least one golfer, or type a name.');
-	editRound(r.id, x => invitees.forEach(i => {
-		x.players.push({id: uid(), name: i.name, regularId: i.regularId, status: 'pending', teeTimeId: ''});
+	const pids = invitees.map(() => uid());
+	editRound(r.id, x => invitees.forEach((i, n) => {
+		x.players.push({id: pids[n], name: i.name, regularId: i.regularId, status: 'pending', teeTimeId: ''});
 	}));
-	closeSheet();
-	toast(invitees.length === 1 ? `Invited ${invitees[0].name}` : `Invited ${invitees.length} players`);
+	openSheet('send-invites', {roundId: r.id, pids, sent: new Set(), text: inviteText(findRound(r.id))});
 }
 
 function regularSheet() {
@@ -1105,10 +1136,30 @@ function editPlayerSheet() {
 
 function messageSheet() {
 	return sheetHead('Invite text') + `<div class="form">
-		<p class="hint">Edit it for whoever you’re sending to, then copy.</p>
+		<p class="hint">Edit it if you like, then copy it or open it in Messages.</p>
 		<textarea class="input message-box" id="f-message" aria-label="Invite text">${esc(sheet.text)}</textarea>
 		<p class="hint" id="copyHint" hidden>Copying didn’t work in this browser. The text is selected, so copy it yourself.</p>
-		<div class="sheet-actions"><button class="primary" type="button" data-action="copy-message">Copy text</button></div>
+		<div class="sheet-actions two">
+			<button class="secondary" type="button" data-action="copy-message">Copy text</button>
+			<button class="primary with-icon" type="button" data-action="share-message">${icoMessage}Text it</button>
+		</div>
+	</div>`;
+}
+function sendRow(p) {
+	const sent = sheet.sent.has(p.id);
+	return `<li class="player send-row${sent ? ' is-sent' : ''}">
+		<span class="p-main"><span class="p-name">${esc(p.name)}</span></span>
+		<button class="text-link" type="button" data-action="text-golfer" data-pid="${esc(p.id)}">${sent ? `${icoCheck}Texted` : `${icoMessage}Text`}</button>
+	</li>`;
+}
+function sendInvitesSheet() {
+	const r = findRound(sheet.roundId);
+	const players = sheet.pids.map(pid => r.players.find(p => p.id === pid)).filter(Boolean);
+	return sheetHead(players.length === 1 ? `Invited ${players[0].name}` : `Invited ${players.length} golfers`) + `<div class="form">
+		<div class="field"><label for="f-message">Message</label><textarea class="input message-box" id="f-message">${esc(sheet.text)}</textarea></div>
+		<section class="list-card"><ul class="slots" id="sendList">${players.map(sendRow).join('')}</ul></section>
+		<p class="hint">Text opens the share sheet with this message. Pick Messages, then who to send it to.</p>
+		<div class="sheet-actions"><button class="primary" type="button" data-action="close-sheet">Done</button></div>
 	</div>`;
 }
 
@@ -1197,8 +1248,10 @@ function submitEditPlayer() {
 	const status = $('sheet').querySelector('input[name="status"]:checked')?.value;
 	const note = $('f-note').value.trim();
 	const g = regularFor(r.players.find(p => p.id === sheet.pid));
-	const golferNote = $('f-gnote')?.value.trim();
-	if (g && golferNote !== undefined && golferNote !== g.note) saveDoc('regulars', {...g, note: golferNote});
+	if (g) {
+		const golferNote = $('f-gnote').value.trim();
+		if (golferNote !== g.note) saveDoc('regulars', {...g, note: golferNote});
+	}
 	editRound(r.id, x => {
 		const p = x.players.find(y => y.id === sheet.pid);
 		Object.assign(p, {name, note});
@@ -1292,6 +1345,24 @@ document.addEventListener('click', ev => {
 			x.bookOn = '';
 		});
 		toast('Marked as booked');
+	} else if (action === 'text-golfer') {
+		const pid = btn.dataset.pid;
+		const roundId = sheet?.roundId ?? view.roundId;
+		const fromSendList = sheet?.kind === 'send-invites';
+		shareText(fromSendList ? sheet.text : inviteText(findRound(roundId))).then(sent => {
+			if (!sent) return;
+			if (fromSendList && sheet?.kind === 'send-invites') {
+				sheet.sent.add(pid);
+				btn.innerHTML = `${icoCheck}Texted`;
+				btn.closest('li').classList.add('is-sent');
+			}
+			editRound(roundId, x => {
+				const p = x.players.find(y => y.id === pid);
+				if (p) p.textedAt = new Date().toISOString();
+			});
+		});
+	} else if (action === 'share-message') {
+		shareText(sheet.text);
 	} else if (action === 'show-new-person') {
 		$('newPerson').hidden = false;
 		btn.hidden = true;
@@ -1388,6 +1459,8 @@ document.addEventListener('input', ev => {
 		$('pickList')?.querySelectorAll('[data-search]').forEach(row => { row.closest('li').hidden = !row.dataset.search.includes(q); });
 	} else if (id === 'f-name' && $('inviteBtn')) {
 		$('inviteBtn').textContent = inviteLabel();
+	} else if (id === 'f-message') {
+		sheet.text = ev.target.value;
 	}
 });
 
