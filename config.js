@@ -5,4 +5,5 @@
 window.TEE_SHEET_CONFIG = {
 	supabaseUrl: 'https://juliermtdyeiaxtcscwr.supabase.co',
 	supabaseKey: 'sb_publishable_CskAPARZ2Q2phx7slJ_W-w_pXMWb-Dh',
+	ownerName: 'Jake Pennington',
 };

@@ -200,11 +200,17 @@ textarea.input.note-box { min-height: 64px; }
 .open-slot { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 10px 14px; border: 0; background: none; color: var(--ink-2); text-align: left; }
 .open-slot .plus { width: 26px; height: 26px; border-radius: 50%; border: 1.5px dashed var(--line); display: grid; place-items: center; font-size: 18px; line-height: 1; }
 .open-slot:hover .plus { border-color: var(--accent); color: var(--accent); }
-.open-slot.is-target { color: var(--accent); font-weight: 600; }
-.open-slot.is-target .plus { border-style: solid; border-color: var(--accent); }
-.player.is-selected { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
-.player .chip { flex: none; }
-.arrange-note { margin-top: 16px; margin-bottom: 0; color: var(--ink); }
+.grip { flex: none; align-self: stretch; width: 30px; margin-right: -6px; display: grid; place-items: center; color: var(--ink-2); opacity: .55; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.grip:hover { opacity: 1; }
+.player.is-dragging { opacity: .3; }
+.drag-ghost { position: fixed; z-index: 70; margin: 0; list-style: none; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 28px rgba(0, 0, 0, .22); transform: scale(1.02); opacity: .9; }
+.drag-ghost .grip { opacity: 1; cursor: grabbing; }
+body.is-dragging { -webkit-user-select: none; user-select: none; cursor: grabbing; }
+.player.drop-target { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.tee.drop-target { box-shadow: 0 0 0 2px var(--accent); }
+.drop-only { display: none; }
+body.is-dragging .drop-only { display: block; }
+.drop-hint { margin: 0; padding: 14px; color: var(--ink-2); font-size: 14px; }
 .hint { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
 
 .row-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
@@ -296,6 +302,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 .sheet-actions.two .secondary { order: -1; }
 .sheet-actions.sticky { position: sticky; bottom: 0; z-index: 1; padding-block: 10px; background: var(--surface); border-top: 1px solid var(--line); }
 .primary[disabled] { opacity: .5; }
+.text-btn { justify-self: start; min-height: 40px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 600; }
 .message-box { min-height: 96px; line-height: 1.45; }
 .err { color: var(--out); font-size: 14px; }
 
@@ -325,6 +332,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script>
 const SLOTS_PER_TEE = 4;
+const OWNER_NAME = window.TEE_SHEET_CONFIG?.ownerName || 'Me';
 const STATUS_LABEL = {in: 'In', pending: 'Pending', out: 'Out'};
 const NEXT_STATUS = {pending: 'in', in: 'out', out: 'pending'};
 const STATUS_ORDER = {in: 0, pending: 1, out: 2};
@@ -341,7 +349,7 @@ const deletedKeys = new Set();
 let view = {name: 'list', roundId: null};
 let showPast = false;
 let sheet = null;
-let arranging = null;
+let drag = null;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -406,7 +414,7 @@ function normalize(r) {
 		notes: r.notes || '',
 		example: !!r.example,
 		teeTimes: Array.isArray(r.teeTimes) ? [...r.teeTimes].sort((a, b) => a.time.localeCompare(b.time)) : [],
-		players: Array.isArray(r.players) ? r.players : [],
+		players: (Array.isArray(r.players) ? r.players : []).map(p => (p.name === 'Me' ? {...p, name: OWNER_NAME} : p)),
 		createdAt: r.createdAt || '',
 		updatedAt: r.updatedAt || '',
 	};
@@ -465,19 +473,24 @@ function byStatusThenLeague(a, b) {
 function onRound(r, g) {
 	return r.players.some(p => p.regularId === g.id || sameName(p.name, g.name));
 }
-function playedCounts() {
-	const counts = new Map();
+function golferStats() {
+	const stats = new Map();
 	rounds.forEach(r => regulars.forEach(g => {
-		if (onRound(r, g)) counts.set(g.id, (counts.get(g.id) || 0) + 1);
+		const p = r.players.find(x => x.regularId === g.id || sameName(x.name, g.name));
+		if (p?.status !== 'in') return;
+		const s = stats.get(g.id) || {played: 0, last: ''};
+		s.played++;
+		if (r.date > s.last) s.last = r.date;
+		stats.set(g.id, s);
 	}));
-	return counts;
+	return g => stats.get(g.id) || {played: 0, last: ''};
 }
-function sortedRegulars() {
-	const played = playedCounts();
-	return [...regulars].sort((a, b) => b.league - a.league || (played.get(b.id) || 0) - (played.get(a.id) || 0) || a.name.localeCompare(b.name));
+function rankedRegulars() {
+	const stats = golferStats();
+	return [...regulars].sort((a, b) => stats(b).played - stats(a).played || stats(b).last.localeCompare(stats(a).last) || a.name.localeCompare(b.name));
 }
 function unsavedNames() {
-	return knownNames().filter(n => !sameName(n, 'Me') && !regulars.some(g => sameName(g.name, n)));
+	return knownNames().filter(n => !sameName(n, OWNER_NAME) && !sameName(n, 'Me') && !regulars.some(g => sameName(g.name, n)));
 }
 
 /* Storage: Supabase when configured and signed in, this browser otherwise */
@@ -613,13 +626,13 @@ function editRound(id, mutate) {
 const icoBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function render() {
+	if (drag) return;
 	if (storeMode === 'auth') {
 		renderSignIn();
 		return;
 	}
 	if (view.name === 'round' && !findRound(view.roundId) && loaded) view = {name: 'list', roundId: null};
 	if (sheet?.roundId && !findRound(sheet.roundId) && loaded) closeSheet();
-	if (arranging && (view.name !== 'round' || view.roundId !== arranging.roundId)) arranging = null;
 	if (view.name === 'round' && findRound(view.roundId)) renderRound(findRound(view.roundId));
 	else if (view.name === 'regulars') renderRegulars();
 	else renderList();
@@ -714,12 +727,16 @@ function renderList() {
 function noteHtml(p) {
 	return p.note ? `<span class="p-note">${esc(p.note)}</span>` : '';
 }
+const gripIcon = '<svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="4" r="1.6"/><circle cx="9" cy="4" r="1.6"/><circle cx="3" cy="10" r="1.6"/><circle cx="9" cy="10" r="1.6"/><circle cx="3" cy="16" r="1.6"/><circle cx="9" cy="16" r="1.6"/></g></svg>';
 function playerRow(r, p) {
 	const sub = [];
 	if (p.guestOf && nameOf(r, p.guestOf)) sub.push(`Guest of ${esc(nameOf(r, p.guestOf))}`);
 	const guests = r.players.filter(g => g.guestOf === p.id).length;
 	if (guests) sub.push(`Bringing ${guests} guest${guests > 1 ? 's' : ''}`);
-	return `<li class="player${p.status === 'out' ? ' is-out' : ''}">
+	const draggable = p.status !== 'out' && r.teeTimes.length > 0;
+	const tee = r.teeTimes.some(t => t.id === p.teeTimeId) ? p.teeTimeId : '';
+	return `<li class="player${p.status === 'out' ? ' is-out' : ''}" data-pid="${esc(p.id)}"${draggable ? ` data-tee="${esc(tee)}"` : ''}>
+		${draggable ? `<span class="grip" data-grip title="Drag to another tee time">${gripIcon}</span>` : ''}
 		<button class="p-main" data-action="edit-player" data-pid="${esc(p.id)}">
 			<span class="p-name">${esc(p.name)}${isLeague(p) ? '<span class="league">League</span>' : ''}</span>
 			${sub.length ? `<span class="p-sub">${sub.join(' · ')}</span>` : ''}
@@ -728,22 +745,8 @@ function playerRow(r, p) {
 		<button class="pill ${p.status}" data-action="cycle" data-pid="${esc(p.id)}" aria-label="${esc(p.name)} is ${STATUS_LABEL[p.status]}. Tap to change.">${STATUS_LABEL[p.status]}</button>
 	</li>`;
 }
-
-function arrangeRow(p) {
-	const selected = arranging.pid === p.id;
-	return `<li class="player${selected ? ' is-selected' : ''}">
-		<button class="p-main" data-action="arrange-tap" data-pid="${esc(p.id)}" aria-pressed="${selected}">
-			<span class="p-name">${esc(p.name)}${isLeague(p) ? '<span class="league">League</span>' : ''}</span>
-			${noteHtml(p)}
-		</button>
-		<span class="chip ${p.status}">${STATUS_LABEL[p.status]}</span>
-	</li>`;
-}
-function slotButton(tee, label) {
-	if (!arranging) return `<li><button class="open-slot" data-action="invite-players" data-tee="${esc(tee)}"><span class="plus" aria-hidden="true">+</span>${label}</button></li>`;
-	const movingFrom = findRound(arranging.roundId).players.find(p => p.id === arranging.pid)?.teeTimeId;
-	const target = arranging.pid && movingFrom !== tee;
-	return `<li><button class="open-slot${target ? ' is-target' : ''}" data-action="arrange-to" data-tee="${esc(tee)}"><span class="plus" aria-hidden="true">${target ? '→' : '+'}</span>${target ? 'Move here' : label}</button></li>`;
+function openSlot(tee, label) {
+	return `<li><button class="open-slot" data-action="invite-players" data-tee="${esc(tee)}"><span class="plus" aria-hidden="true">+</span>${label}</button></li>`;
 }
 function renderRound(r) {
 	const c = counts(r);
@@ -758,47 +761,35 @@ function renderRound(r) {
 			<div class="stat${c.open < 0 ? ' over' : ''}"><b>${c.spots ? Math.abs(c.open) : '–'}</b><span>${c.open < 0 ? 'Over' : 'Open'}</span></div>
 		</div>`;
 
-	const row = p => (arranging ? arrangeRow(p) : playerRow(r, p));
-	if (arranging) {
-		const moving = arranging.pid ? nameOf(r, arranging.pid) : '';
-		html += `<div class="notice arrange-note"><span>${moving ? `Moving <b>${esc(moving)}</b>. Tap another golfer to swap, or an open spot to move them.` : 'Tap a golfer, then tap another golfer to swap them, or an open spot to move them.'}</span></div>`;
-	} else if (r.teeTimes.length && r.players.some(p => p.status !== 'out')) {
-		html += '<div class="section-label"><span>Groups</span><button data-action="arrange">Rearrange</button></div>';
-	}
-
 	r.teeTimes.forEach(t => {
 		const ps = playersAt(r, t.id);
 		const {clock, mer} = splitTime(t.time);
 		const over = ps.length > SLOTS_PER_TEE;
 		let open = '';
 		for (let i = ps.length; i < SLOTS_PER_TEE; i++) {
-			open += slotButton(t.id, 'Open spot');
+			open += openSlot(t.id, 'Open spot');
 		}
-		html += `<section class="tee" aria-label="${esc(fmtTime(t.time))} tee time">
+		html += `<section class="tee" data-drop-tee="${esc(t.id)}" data-full="${ps.length >= SLOTS_PER_TEE}" aria-label="${esc(fmtTime(t.time))} tee time">
 			<div class="tee-head">
 				<span class="tee-time">${clock}<small>${mer}</small></span>
 				<span class="tee-fill${over ? ' over' : ''}">${over ? `${ps.length} booked, max ${SLOTS_PER_TEE}` : `${ps.length} of ${SLOTS_PER_TEE}`}${meterHtml({teeTimes: [t], players: ps})}</span>
 			</div>
-			<ul class="slots">${ps.map(row).join('')}${open}</ul>
+			<ul class="slots">${ps.map(p => playerRow(r, p)).join('')}${open}</ul>
 		</section>`;
 	});
 
 	const teeIds = new Set(r.teeTimes.map(t => t.id));
 	const unassigned = r.players.filter(p => p.status !== 'out' && !teeIds.has(p.teeTimeId)).sort(byStatusThenLeague);
-	if (unassigned.length || !r.teeTimes.length || arranging?.pid) {
-		const empty = arranging ? slotButton('', 'No tee time') : slotButton('', 'Invite the first player');
-		html += `<section class="tee"><div class="tee-head"><span class="tee-label">${r.teeTimes.length ? 'No tee time yet' : 'Players'}</span><span class="tee-fill">${unassigned.length}</span></div>
-			<ul class="slots">${unassigned.map(row).join('')}${!unassigned.length || arranging?.pid ? empty : ''}</ul></section>`;
+	if (unassigned.length || !r.teeTimes.length) {
+		html += `<section class="tee"${r.teeTimes.length ? ' data-drop-tee=""' : ''}><div class="tee-head"><span class="tee-label">${r.teeTimes.length ? 'No tee time yet' : 'Players'}</span><span class="tee-fill">${unassigned.length}</span></div>
+			<ul class="slots">${unassigned.map(p => playerRow(r, p)).join('')}${!unassigned.length ? openSlot('', 'Invite the first player') : ''}</ul></section>`;
 		if (!r.teeTimes.length) html += '<p class="hint">Add tee times from “Edit round” to split players into groups of four.</p>';
+	} else {
+		html += `<section class="tee drop-only" data-drop-tee=""><div class="tee-head"><span class="tee-label">No tee time yet</span></div>
+			<p class="drop-hint">Drop here to take them off a tee time</p></section>`;
 	}
 
 	const out = r.players.filter(p => p.status === 'out');
-	if (arranging) {
-		$('main').innerHTML = html;
-		$('barInner').innerHTML = '<button class="primary" data-action="arrange-done">Done</button>';
-		$('bar').hidden = false;
-		return;
-	}
 	if (out.length) {
 		html += `<section class="tee"><div class="tee-head"><span class="tee-label">Can’t make it</span><span class="tee-fill">${out.length}</span></div>
 			<ul class="slots">${out.map(p => playerRow(r, p)).join('')}</ul></section>`;
@@ -813,12 +804,15 @@ function renderRound(r) {
 	$('bar').hidden = false;
 }
 
-function regularRow(g, played) {
-	const n = played.get(g.id) || 0;
+function playedLabel(s) {
+	if (!s.played) return 'No rounds yet';
+	return `${s.played} round${s.played === 1 ? '' : 's'} · latest ${fmtDate(s.last, {month: 'short', day: 'numeric'})}`;
+}
+function regularRow(g, stats) {
 	return `<li class="player">
 		<button class="p-main" data-action="edit-regular" data-gid="${esc(g.id)}">
 			<span class="p-name">${esc(g.name)}</span>
-			<span class="p-sub">${n ? `${n} round${n === 1 ? '' : 's'}` : 'No rounds yet'}</span>
+			<span class="p-sub">${playedLabel(stats(g))}</span>
 		</button>
 		<button class="pill league-toggle${g.league ? ' on' : ''}" data-action="toggle-league" data-gid="${esc(g.id)}" aria-pressed="${g.league}" aria-label="${esc(g.name)} ${g.league ? 'is' : 'is not'} in men’s league. Tap to change.">${g.league ? 'In league' : 'Not in league'}</button>
 	</li>`;
@@ -826,12 +820,12 @@ function regularRow(g, played) {
 
 function renderRegulars() {
 	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Rounds</button>`;
-	const played = playedCounts();
-	const sorted = sortedRegulars();
-	const league = sorted.filter(g => g.league);
-	const others = sorted.filter(g => !g.league);
+	const stats = golferStats();
+	const ranked = rankedRegulars();
+	const league = ranked.filter(g => g.league);
+	const others = ranked.filter(g => !g.league);
 	const unsaved = unsavedNames();
-	let html = '<div class="page-head"><h1 class="course">Golfers</h1><p class="when">Men’s league members show first when you invite players.</p></div>';
+	let html = '<div class="page-head"><h1 class="course">Golfers</h1><p class="when">Golfers who’ve said yes to the most rounds show first when you invite players.</p></div>';
 	if (unsaved.length) {
 		html += `<div class="notice"><span>${unsaved.length} ${unsaved.length === 1 ? 'person' : 'people'} from your rounds ${unsaved.length === 1 ? 'isn’t' : 'aren’t'} saved yet.</span><button data-action="import-regulars">Add ${unsaved.length === 1 ? 'them' : 'all'}</button></div>`;
 	}
@@ -839,10 +833,10 @@ function renderRegulars() {
 		html += '<div class="empty"><strong>No golfers yet</strong><span>Add the people you play with, or paste a list from your notes. Mark who’s in men’s league.</span></div>';
 	}
 	if (league.length) {
-		html += `<div class="section-label">Men’s league · ${league.length}</div><section class="list-card"><ul class="slots">${league.map(g => regularRow(g, played)).join('')}</ul></section>`;
+		html += `<div class="section-label">Men’s league · ${league.length}</div><section class="list-card"><ul class="slots">${league.map(g => regularRow(g, stats)).join('')}</ul></section>`;
 	}
 	if (others.length) {
-		html += `<div class="section-label">Others · ${others.length}</div><section class="list-card"><ul class="slots">${others.map(g => regularRow(g, played)).join('')}</ul></section>`;
+		html += `<div class="section-label">Others · ${others.length}</div><section class="list-card"><ul class="slots">${others.map(g => regularRow(g, stats)).join('')}</ul></section>`;
 	}
 	$('main').innerHTML = html;
 	$('barInner').innerHTML = '<button class="secondary" data-action="import-list">Import list</button><button class="primary" data-action="add-regular">Add golfer</button>';
@@ -880,10 +874,6 @@ function teeSelect(r, current, excludePid) {
 	}).join('');
 	return `<div class="field"><label for="f-tee">Tee time</label><select class="input" id="f-tee" name="tee"><option value="">No tee time yet</option>${opts}</select></div>`;
 }
-function guestSelect(r, current, excludePid) {
-	const opts = r.players.filter(p => p.id !== excludePid).map(p => `<option value="${esc(p.id)}"${current === p.id ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
-	return `<div class="field"><label for="f-guest">Invited by</label><select class="input" id="f-guest" name="guestOf"><option value="">Me</option>${opts}</select></div>`;
-}
 
 function sheetHtml() {
 	if (sheet.kind === 'round') return roundSheet();
@@ -915,13 +905,12 @@ function roundSheet() {
 }
 
 function pickRows(r) {
-	const played = playedCounts();
-	return sortedRegulars().filter(g => !onRound(r, g)).map(g => {
-		const n = played.get(g.id) || 0;
+	const stats = golferStats();
+	return rankedRegulars().filter(g => !onRound(r, g)).map(g => {
 		const on = sheet.selected.has(g.id);
 		return `<li><button type="button" class="pick-row${on ? ' on' : ''}" data-action="toggle-pick" data-gid="${esc(g.id)}" data-search="${esc(g.name.toLowerCase())}" aria-pressed="${on}">
 			<span class="tick" aria-hidden="true"></span>
-			<span class="pick-text"><span class="p-name">${esc(g.name)}${g.league ? '<span class="league">League</span>' : ''}</span><span class="p-sub">${n ? `${n} round${n === 1 ? '' : 's'}` : 'No rounds yet'}</span></span>
+			<span class="pick-text"><span class="p-name">${esc(g.name)}${g.league ? '<span class="league">League</span>' : ''}</span><span class="p-sub">${playedLabel(stats(g))}</span></span>
 		</button></li>`;
 	}).join('');
 }
@@ -932,7 +921,8 @@ function inviteLabel() {
 function invitePlayersSheet() {
 	const r = findRound(sheet.roundId);
 	const host = sheet.guestOf ? nameOf(r, sheet.guestOf) : '';
-	const available = sortedRegulars().filter(g => !onRound(r, g));
+	const available = rankedRegulars().filter(g => !onRound(r, g));
+	const showNew = !available.length || !!sheet.guestOf;
 	const teeOpts = [
 		`<option value="auto"${sheet.tee === 'auto' ? ' selected' : ''}>Next open spot</option>`,
 		...r.teeTimes.map(t => `<option value="${esc(t.id)}"${sheet.tee === t.id ? ' selected' : ''}>${esc(fmtTime(t.time))} (${playersAt(r, t.id).length} of ${SLOTS_PER_TEE})</option>`),
@@ -945,10 +935,13 @@ function invitePlayersSheet() {
 		${available.length > 8 ? '<input class="input" type="search" id="f-search" placeholder="Search golfers" autocomplete="off" aria-label="Search golfers">' : ''}
 		${list}
 		<datalist id="nameList">${unsavedNames().filter(n => !r.players.some(p => sameName(p.name, n))).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>
-		<div class="field"><label for="f-name">Someone new</label><input class="input" id="f-name" list="nameList" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
-		<div class="checks">
-			<label class="check"><input type="checkbox" id="f-save"${sheet.guestOf ? '' : ' checked'}>Save to golfers</label>
-			<label class="check" id="leagueCheck"${sheet.guestOf ? ' hidden' : ''}><input type="checkbox" id="f-league">In men’s league</label>
+		<button type="button" class="text-btn" id="showNewBtn" data-action="show-new-person"${showNew ? ' hidden' : ''}>Someone not in your golfers?</button>
+		<div class="form" id="newPerson"${showNew ? '' : ' hidden'}>
+			<div class="field"><label for="f-name">Someone new</label><input class="input" id="f-name" list="nameList" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
+			<div class="checks">
+				<label class="check"><input type="checkbox" id="f-save"${sheet.guestOf ? '' : ' checked'}>Save to golfers</label>
+				<label class="check" id="leagueCheck"${sheet.guestOf ? ' hidden' : ''}><input type="checkbox" id="f-league">In men’s league</label>
+			</div>
 		</div>
 		${r.teeTimes.length ? `<div class="field"><label for="f-tee">Tee time</label><select class="input" id="f-tee">${teeOpts}</select></div>` : ''}
 		<p class="err" id="formErr" hidden></p>
@@ -958,7 +951,7 @@ function invitePlayersSheet() {
 function submitInvitePlayers() {
 	const r = findRound(sheet.roundId);
 	const name = $('f-name').value.trim();
-	const picked = sortedRegulars().filter(g => sheet.selected.has(g.id));
+	const picked = rankedRegulars().filter(g => sheet.selected.has(g.id));
 	const invitees = picked.map(g => ({name: g.name, regularId: g.id}));
 	if (name) {
 		if (r.players.some(p => sameName(p.name, name))) return showErr(`${name} is already on this round.`);
@@ -1068,7 +1061,6 @@ function editPlayerSheet() {
 		${statusSeg(p.status)}
 		<div class="field"><label for="f-note">Note</label><textarea class="input note-box" id="f-note" rows="2" placeholder="e.g. Needs the later tee time, or still confirming">${esc(p.note || '')}</textarea></div>
 		${teeSelect(r, r.teeTimes.some(t => t.id === p.teeTimeId) ? p.teeTimeId : '', p.id)}
-		${guestSelect(r, p.guestOf || '', p.id)}
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions"><button class="primary" type="submit">Save</button>
 			<button class="ghost" type="button" data-action="add-guest" data-pid="${esc(p.id)}">Invite a guest of ${esc(p.name)}</button>
@@ -1142,7 +1134,7 @@ function submitRound() {
 		return;
 	}
 	const sorted = [...teeTimes].sort((a, b) => a.time.localeCompare(b.time));
-	const players = $('f-me').checked ? [{id: uid(), name: 'Me', status: 'in', teeTimeId: sorted[0]?.id ?? '', guestOf: ''}] : [];
+	const players = $('f-me').checked ? [{id: uid(), name: OWNER_NAME, status: 'in', teeTimeId: sorted[0]?.id ?? '', guestOf: ''}] : [];
 	const round = {id: uid(), course, date, notes, teeTimes, players, example: false};
 	saveDoc('rounds', round);
 	closeSheet();
@@ -1159,11 +1151,10 @@ function submitEditPlayer() {
 	if (r.players.some(p => p.id !== sheet.pid && p.name.toLowerCase() === name.toLowerCase())) return showErr(`${name} is already on this round.`);
 	const status = $('sheet').querySelector('input[name="status"]:checked')?.value;
 	const teeTimeId = $('f-tee').value;
-	const guestOf = $('f-guest').value;
 	const note = $('f-note').value.trim();
 	editRound(r.id, x => {
 		const p = x.players.find(y => y.id === sheet.pid);
-		Object.assign(p, {name, status, teeTimeId, guestOf, note});
+		Object.assign(p, {name, status, teeTimeId, note});
 	});
 	closeSheet();
 }
@@ -1250,38 +1241,10 @@ document.addEventListener('click', ev => {
 		const host = r.players.find(p => p.id === btn.dataset.pid);
 		const hostTee = host?.teeTimeId && playersAt(r, host.teeTimeId).length < SLOTS_PER_TEE ? host.teeTimeId : 'auto';
 		openSheet('invite-players', {roundId: r.id, tee: hostTee, guestOf: btn.dataset.pid, selected: new Set()});
-	} else if (action === 'arrange' && r) {
-		arranging = {roundId: r.id, pid: null};
-		render();
-	} else if (action === 'arrange-done') {
-		arranging = null;
-		render();
-	} else if (action === 'arrange-tap' && r) {
-		const pid = btn.dataset.pid;
-		const a = r.players.find(p => p.id === arranging.pid);
-		const b = r.players.find(p => p.id === pid);
-		if (!a || a.id === b.id || a.teeTimeId === b.teeTimeId) {
-			arranging.pid = a?.id === b.id ? null : b.id;
-			render();
-			return;
-		}
-		arranging.pid = null;
-		editRound(r.id, x => {
-			const pa = x.players.find(p => p.id === a.id);
-			const pb = x.players.find(p => p.id === b.id);
-			[pa.teeTimeId, pb.teeTimeId] = [pb.teeTimeId, pa.teeTimeId];
-		});
-		toast(`Swapped ${a.name} and ${b.name}`);
-	} else if (action === 'arrange-to' && r) {
-		if (!arranging.pid || !btn.classList.contains('is-target')) {
-			toast('Tap a golfer from another group first');
-			return;
-		}
-		const pid = arranging.pid;
-		const tee = r.teeTimes.find(t => t.id === btn.dataset.tee);
-		arranging.pid = null;
-		editRound(r.id, x => { x.players.find(p => p.id === pid).teeTimeId = btn.dataset.tee; });
-		toast(`Moved ${nameOf(r, pid)} to ${tee ? fmtTime(tee.time) : 'no tee time'}`);
+	} else if (action === 'show-new-person') {
+		$('newPerson').hidden = false;
+		btn.hidden = true;
+		$('f-name').focus();
 	} else if (action === 'toggle-pick') {
 		const id = btn.dataset.gid;
 		if (sheet.selected.has(id)) sheet.selected.delete(id);
@@ -1407,6 +1370,88 @@ document.addEventListener('change', ev => {
 	if (ev.target.id === 'f-save' && $('leagueCheck')) $('leagueCheck').hidden = !ev.target.checked;
 });
 
+/* Drag a golfer by its grip onto another golfer (swap tee times) or onto a group with room (move) */
+function dropTargetAt(x, y) {
+	const el = document.elementFromPoint(x, y);
+	const row = el?.closest('.player[data-tee]');
+	if (row && row.dataset.pid !== drag.pid && row.dataset.tee !== drag.fromTee) return {type: 'swap', el: row, pid: row.dataset.pid};
+	const group = el?.closest('[data-drop-tee]');
+	if (group && group.dataset.dropTee !== drag.fromTee && group.dataset.full !== 'true') return {type: 'move', el: group, tee: group.dataset.dropTee};
+	return null;
+}
+function updateDropTarget() {
+	const target = dropTargetAt(drag.x, drag.y);
+	if (target?.el === drag.target?.el) return;
+	drag.target?.el.classList.remove('drop-target');
+	target?.el.classList.add('drop-target');
+	drag.target = target;
+}
+function dragScroll() {
+	if (!drag) return;
+	const edge = 90;
+	const step = drag.y < edge ? -12 : drag.y > innerHeight - edge - 70 ? 12 : 0;
+	if (step) {
+		window.scrollBy(0, step);
+		updateDropTarget();
+	}
+	requestAnimationFrame(dragScroll);
+}
+function endDrag(commit) {
+	if (!drag) return;
+	const {pid, target, ghost, row} = drag;
+	ghost.remove();
+	row.classList.remove('is-dragging');
+	target?.el.classList.remove('drop-target');
+	document.body.classList.remove('is-dragging');
+	drag = null;
+	const r = findRound(view.roundId);
+	if (!commit || !target || !r) {
+		render();
+		return;
+	}
+	const name = nameOf(r, pid);
+	if (target.type === 'swap') {
+		editRound(r.id, x => {
+			const a = x.players.find(p => p.id === pid);
+			const b = x.players.find(p => p.id === target.pid);
+			[a.teeTimeId, b.teeTimeId] = [b.teeTimeId, a.teeTimeId];
+		});
+		toast(`Swapped ${name} and ${nameOf(r, target.pid)}`);
+	} else {
+		const tee = r.teeTimes.find(t => t.id === target.tee);
+		editRound(r.id, x => { x.players.find(p => p.id === pid).teeTimeId = target.tee; });
+		toast(`Moved ${name} to ${tee ? fmtTime(tee.time) : 'no tee time'}`);
+	}
+}
+
+document.addEventListener('pointerdown', ev => {
+	const grip = ev.target.closest('[data-grip]');
+	if (!grip || drag) return;
+	ev.preventDefault();
+	const row = grip.closest('.player');
+	const rect = row.getBoundingClientRect();
+	const ghost = row.cloneNode(true);
+	ghost.classList.add('drag-ghost');
+	ghost.style.width = `${rect.width}px`;
+	ghost.style.left = `${rect.left}px`;
+	ghost.style.top = `${rect.top}px`;
+	document.body.appendChild(ghost);
+	grip.setPointerCapture(ev.pointerId);
+	row.classList.add('is-dragging');
+	document.body.classList.add('is-dragging');
+	drag = {pid: row.dataset.pid, fromTee: row.dataset.tee, row, ghost, offsetY: ev.clientY - rect.top, x: ev.clientX, y: ev.clientY, target: null};
+	requestAnimationFrame(dragScroll);
+});
+document.addEventListener('pointermove', ev => {
+	if (!drag) return;
+	drag.x = ev.clientX;
+	drag.y = ev.clientY;
+	drag.ghost.style.top = `${ev.clientY - drag.offsetY}px`;
+	updateDropTarget();
+});
+document.addEventListener('pointerup', () => endDrag(true));
+document.addEventListener('pointercancel', () => endDrag(false));
+
 document.addEventListener('keydown', ev => {
 	if (ev.key === 'Escape' && sheet) closeSheet();
 });
@@ -1453,22 +1498,22 @@ async function submitSignIn() {
 	}
 }
 
+let pageBaseline = null;
 async function reloadIfUpdated() {
-	if (location.protocol !== 'https:' || sheet) return;
+	if (location.protocol !== 'https:' || sheet || drag) return;
 	try {
-		const res = await fetch(location.pathname, {cache: 'reload'});
-		const latest = Date.parse(res.headers.get('last-modified') || '');
-		const current = Date.parse(document.lastModified);
-		if (!latest || !current || latest <= current) return;
-		if (sessionStorage.getItem('teesheet.reloadedFor') === String(latest)) return;
-		sessionStorage.setItem('teesheet.reloadedFor', String(latest));
-		location.reload();
+		const res = await fetch(location.pathname, {cache: 'no-store'});
+		if (!res.ok) return;
+		const text = await res.text();
+		if (pageBaseline === null) pageBaseline = text;
+		else if (text !== pageBaseline) location.reload();
 	} catch (updateErr) {
-		// Offline or storage blocked: keep running the copy we have.
+		// Offline: keep running the copy we have.
 	}
 }
 
 function start() {
+	if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 	reloadIfUpdated();
 	document.addEventListener('visibilitychange', () => {
 		if (document.visibilityState === 'visible') reloadIfUpdated();
