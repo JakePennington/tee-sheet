@@ -42,7 +42,8 @@ Round `data` shape:
   "date": "2026-10-17",
   "notes": "Carts booked for both groups.",
   "example": false,
-  "tentative": false,
+  "tentative": true,
+  "bookOn": "2026-10-10",
   "teeTimes": [{"id": "t1", "time": "08:10"}],
   "players": [
     {"id": "p1", "name": "Jake Pennington", "regularId": "", "status": "in", "teeTimeId": "t1"},
@@ -53,7 +54,7 @@ Round `data` shape:
 }
 ```
 
-- `tentative: true` means the tee times aren't booked yet (gauging interest). Shown as a Tentative tag and notice with a "Mark as booked" button, and the invite text asks "you interested?" instead of "you in?". Missing means booked.
+- `tentative: true` means the tee times aren't booked yet (gauging interest). `bookOn` is an optional date when the tee times open for booking (cleared when booked). Shown as a Tentative / "Book Oct 10" / "Book now" tag on the home screen and a booking card with a "Mark booked" button on the round, and the invite text asks "you interested?" instead of "you in?". Missing means booked.
 - `date` is a local calendar date (`YYYY-MM-DD`); `time` is 24-hour `HH:MM`.
 - `status` is `in`, `pending` or `out`. Out players keep their `teeTimeId` but don't take a spot.
 - Each tee time holds 4 players (`SLOTS_PER_TEE`). Overbooking is allowed and shown as a warning.
@@ -67,9 +68,10 @@ Round `data` shape:
 Regular (golfer) `data` shape:
 
 ```json
-{"name": "Dave", "league": true, "createdAt": "...", "updatedAt": "..."}
+{"name": "Dave", "league": true, "note": "Out until November", "createdAt": "...", "updatedAt": "..."}
 ```
 
+- `note` on a golfer follows them everywhere (⚑, on rounds, the invite checklist and the Golfers screen). It's edited on the Golfers screen or from a golfer's panel on a round. The per-round player `note` (✎) is separate.
 - `league` means the person is in men's league with the owner. League members get a "League" badge and sort first among players with the same status on a round.
 
 - `normalize()` / `normalizeRegular()` in `index.html` fills defaults for missing fields, so **new fields can be added to `data` without a database migration**. Only add columns or tables when a query actually needs them.

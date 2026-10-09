@@ -178,6 +178,8 @@ p { margin: 0; }
 .p-sub { font-size: 13px; color: var(--ink-2); }
 .p-note { justify-self: start; margin-top: 4px; padding: 3px 9px; border-radius: 8px; background: var(--surface-2); color: var(--ink); font-size: 14px; line-height: 1.3; white-space: pre-wrap; overflow-wrap: anywhere; }
 .p-note::before { content: '✎ '; color: var(--ink-2); }
+.p-note.g-note { background: var(--accent-soft); }
+.p-note.g-note::before { content: '⚑ '; color: var(--accent); }
 .player.is-out .p-note { text-decoration: none; }
 textarea.input.note-box { min-height: 64px; }
 .pill { flex: none; min-width: 88px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1.5px solid transparent; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -303,7 +305,15 @@ textarea.input { min-height: 80px; resize: vertical; }
 .seg input[value="booked"]:checked + label { background: var(--in-bg); border-color: var(--in); color: var(--in); }
 .seg input[value="tentative"]:checked + label { background: var(--pending-bg); border-color: var(--pending); border-style: dashed; color: var(--pending); }
 .chip.tentative { background: transparent; color: var(--pending); border: 1.5px dashed var(--pending); padding: 1px 8px; }
-.tentative-note { margin: 12px 0 0; background: var(--pending-bg); border: 1.5px dashed var(--pending); color: var(--ink); }
+.chip.tentative.due { background: var(--pending); color: var(--surface); border-style: solid; }
+.opt { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.booking-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 12px 12px 12px 14px; border-radius: var(--radius); background: var(--pending-bg); border: 1.5px dashed var(--pending); }
+.booking-card.due { border-style: solid; }
+.booking-text { display: grid; gap: 2px; min-width: 0; }
+.booking-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: var(--pending); }
+.booking-text span { font-size: 15px; color: var(--ink); }
+.booking-card.due .booking-text b { color: var(--pending); }
+.booking-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--in); color: var(--surface); font-weight: 600; font-size: 15px; }
 .times { display: grid; gap: 8px; }
 .time-row { display: flex; gap: 8px; }
 .time-row .picker-wrap { flex: 1; }
@@ -432,6 +442,7 @@ function normalize(r) {
 		notes: r.notes || '',
 		example: !!r.example,
 		tentative: !!r.tentative,
+		bookOn: r.tentative ? r.bookOn || '' : '',
 		teeTimes: Array.isArray(r.teeTimes) ? [...r.teeTimes].sort((a, b) => a.time.localeCompare(b.time)) : [],
 		players: (Array.isArray(r.players) ? r.players : []).map(p => (p.name === 'Me' ? {...p, name: OWNER_NAME} : p)),
 		createdAt: r.createdAt || '',
@@ -473,6 +484,7 @@ function normalizeRegular(g) {
 		id: g.id,
 		name: g.name || 'Unnamed',
 		league: !!g.league,
+		note: g.note || '',
 		createdAt: g.createdAt || '',
 		updatedAt: g.updatedAt || '',
 	};
@@ -645,6 +657,7 @@ function editRound(id, mutate) {
 const icoCalendar = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
 const icoClock = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 const icoRemove = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const icoCheck = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const icoBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function render() {
@@ -697,7 +710,7 @@ function meterHtml(r) {
 function cardHtml(r, past) {
 	const c = counts(r);
 	const chips = [
-		r.tentative ? '<span class="chip tentative">Tentative</span>' : '',
+		r.tentative ? `<span class="chip tentative${bookDue(r) ? ' due' : ''}">${bookChipText(r)}</span>` : '',
 		c.in ? `<span class="chip in">${c.in} in</span>` : '',
 		c.pending ? `<span class="chip pending">${c.pending} pending</span>` : '',
 		c.out ? `<span class="chip out">${c.out} out</span>` : '',
@@ -750,6 +763,9 @@ function renderList() {
 function noteHtml(p) {
 	return p.note ? `<span class="p-note">${esc(p.note)}</span>` : '';
 }
+function golferNoteHtml(g) {
+	return g?.note ? `<span class="p-note g-note">${esc(g.note)}</span>` : '';
+}
 const gripIcon = '<svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="4" r="1.6"/><circle cx="9" cy="4" r="1.6"/><circle cx="3" cy="10" r="1.6"/><circle cx="9" cy="10" r="1.6"/><circle cx="3" cy="16" r="1.6"/><circle cx="9" cy="16" r="1.6"/></g></svg>';
 function playerRow(r, p) {
 	const draggable = p.status !== 'out' && r.teeTimes.length > 0;
@@ -758,6 +774,7 @@ function playerRow(r, p) {
 		${draggable ? `<span class="grip" data-grip title="Drag to another tee time">${gripIcon}</span>` : ''}
 		<button class="p-main" data-action="edit-player" data-pid="${esc(p.id)}">
 			<span class="p-name">${esc(p.name)}${isLeague(p) ? '<span class="league">League</span>' : ''}</span>
+			${golferNoteHtml(regularFor(p))}
 			${noteHtml(p)}
 		</button>
 		<button class="pill ${p.status}" data-action="cycle" data-pid="${esc(p.id)}" aria-label="${esc(p.name)} is ${STATUS_LABEL[p.status]}. Tap to change.">${STATUS_LABEL[p.status]}</button>
@@ -766,12 +783,39 @@ function playerRow(r, p) {
 function openSlot(tee, label) {
 	return `<li><button class="open-slot" data-action="invite-players" data-tee="${esc(tee)}"><span class="plus" aria-hidden="true">+</span>${label}</button></li>`;
 }
+function bookDue(r) {
+	return r.tentative && !!r.bookOn && daysUntil(r.bookOn) <= 0;
+}
+function bookChipText(r) {
+	if (!r.bookOn) return 'Tentative';
+	if (bookDue(r)) return 'Book now';
+	return `Book ${fmtDate(r.bookOn, {month: 'short', day: 'numeric'})}`;
+}
+function bookingCard(r) {
+	let when = '';
+	if (r.bookOn) {
+		const n = daysUntil(r.bookOn);
+		const day = fmtDate(r.bookOn, {weekday: 'short', month: 'short', day: 'numeric'});
+		if (n > 1) when = `Book on ${day} · in ${n} days`;
+		else if (n === 1) when = `Book tomorrow, ${day}`;
+		else if (n === 0) when = '<b>Book today</b>';
+		else when = `<b>Booking opened ${day}</b>`;
+	}
+	return `<div class="booking-card${bookDue(r) ? ' due' : ''}">
+		<div class="booking-text">
+			<span class="booking-title">Tentative</span>
+			<span>Tee times aren’t booked yet.</span>
+			${when ? `<span>${when}</span>` : ''}
+		</div>
+		<button class="booking-btn" data-action="mark-booked">${icoCheck}Mark booked</button>
+	</div>`;
+}
 function renderRound(r) {
 	const c = counts(r);
 	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Rounds</button><button class="link-btn" data-action="edit-round">Edit round</button>`;
 	let html = `<h1 class="course">${esc(r.course)}</h1>
 		<p class="when">${esc(fmtDate(r.date, {weekday: 'long', month: 'long', day: 'numeric'}))} · ${esc(relDay(r.date))}</p>
-		${r.tentative ? '<div class="notice tentative-note"><span><b>Tentative.</b> These tee times aren’t booked yet.</span><button data-action="mark-booked">Mark as booked</button></div>' : ''}
+		${r.tentative ? bookingCard(r) : ''}
 		${r.notes ? `<p class="notes">${esc(r.notes)}</p>` : ''}
 		<div class="summary">
 			<div class="stat in"><b>${c.in}</b><span>In</span></div>
@@ -832,6 +876,7 @@ function regularRow(g, stats) {
 		<button class="p-main" data-action="edit-regular" data-gid="${esc(g.id)}">
 			<span class="p-name">${esc(g.name)}</span>
 			<span class="p-sub">${playedLabel(stats(g))}</span>
+			${golferNoteHtml(g)}
 		</button>
 		<button class="pill league-toggle${g.league ? ' on' : ''}" data-action="toggle-league" data-gid="${esc(g.id)}" aria-pressed="${g.league}" aria-label="${esc(g.name)} ${g.league ? 'is' : 'is not'} in men’s league. Tap to change.">${g.league ? 'In league' : 'Not in league'}</button>
 	</li>`;
@@ -908,6 +953,10 @@ function roundSheet() {
 			<input type="radio" name="booking" id="bk-booked" value="booked"${r?.tentative ? '' : ' checked'}><label for="bk-booked">Booked</label>
 			<input type="radio" name="booking" id="bk-tentative" value="tentative"${r?.tentative ? ' checked' : ''}><label for="bk-tentative">Tentative</label>
 		</div></div>
+		<div class="field" id="bookOnField"${r?.tentative ? '' : ' hidden'}><label for="f-bookon">Book on <span class="opt">optional</span></label>
+			<div class="picker-wrap"><input class="input" type="date" id="f-bookon" value="${esc(r?.bookOn ?? '')}"><span class="picker-icon">${icoCalendar}</span></div>
+			<p class="hint">When these tee times open up for booking.</p>
+		</div>
 		<div class="field"><span class="lbl">Tee times</span><div class="times">
 			${times.map((t, i) => `<div class="time-row"><div class="picker-wrap"><input class="input" type="time" id="f-time-${esc(t.id)}" data-time-id="${esc(t.id)}" value="${esc(t.time)}" step="60" aria-label="Tee time ${i + 1}"><span class="picker-icon">${icoClock}</span></div><button class="remove-time" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">${icoRemove}</button></div>`).join('')}
 			<button class="add-time" type="button" data-action="add-time">+ Add tee time</button>
@@ -925,7 +974,7 @@ function pickRows(r) {
 		const on = sheet.selected.has(g.id);
 		return `<li><button type="button" class="pick-row${on ? ' on' : ''}" data-action="toggle-pick" data-gid="${esc(g.id)}" data-search="${esc(g.name.toLowerCase())}" aria-pressed="${on}">
 			<span class="tick" aria-hidden="true"></span>
-			<span class="pick-text"><span class="p-name">${esc(g.name)}${g.league ? '<span class="league">League</span>' : ''}</span><span class="p-sub">${playedLabel(stats(g))}</span></span>
+			<span class="pick-text"><span class="p-name">${esc(g.name)}${g.league ? '<span class="league">League</span>' : ''}</span><span class="p-sub">${playedLabel(stats(g))}</span>${golferNoteHtml(g)}</span>
 		</button></li>`;
 	}).join('');
 }
@@ -1045,6 +1094,7 @@ function regularSheet() {
 	return sheetHead(g ? g.name : 'Add golfer') + `<form class="form" id="regularForm" novalidate>
 		<div class="field"><label for="f-name">Name</label><input class="input" id="f-name" name="name" autocomplete="off" autocapitalize="words" value="${esc(g?.name ?? '')}"${g ? '' : ' data-autofocus'}></div>
 		<label class="check"><input type="checkbox" id="f-league"${g?.league || sheet.league ? ' checked' : ''}>In men’s league</label>
+		<div class="field"><label for="f-gnote">Note</label><textarea class="input note-box" id="f-gnote" rows="2" placeholder="e.g. Out until November. Shows on every round.">${esc(g?.note ?? '')}</textarea></div>
 		<p class="err" id="formErr" hidden></p>
 		${actions}
 	</form>`;
@@ -1054,8 +1104,9 @@ function submitRegular(again) {
 	if (!name) return showErr('Add a name.');
 	if (regulars.some(x => x.id !== sheet.gid && sameName(x.name, name))) return showErr(`${name} is already in your golfers.`);
 	const league = $('f-league').checked;
+	const note = $('f-gnote').value.trim();
 	const g = sheet.gid ? regulars.find(x => x.id === sheet.gid) : null;
-	saveDoc('regulars', g ? {...g, name, league} : {id: uid(), name, league});
+	saveDoc('regulars', g ? {...g, name, league, note} : {id: uid(), name, league, note});
 	if (again) {
 		sheet.league = league;
 		rerenderSheet();
@@ -1070,10 +1121,12 @@ function editPlayerSheet() {
 	const r = findRound(sheet.roundId);
 	const p = r.players.find(x => x.id === sheet.pid);
 	if (!p) return '';
+	const g = regularFor(p);
 	return sheetHead(p.name) + `<form class="form" id="editPlayerForm" novalidate>
 		<div class="field"><label for="f-name">Name</label><input class="input" id="f-name" name="name" autocomplete="off" autocapitalize="words" value="${esc(p.name)}"></div>
 		${statusSeg(p.status)}
 		<div class="field"><label for="f-note">Note</label><textarea class="input note-box" id="f-note" rows="2" placeholder="e.g. Needs the later tee time, or still confirming">${esc(p.note || '')}</textarea></div>
+		${g ? `<div class="field"><label for="f-gnote">Golfer note · every round</label><textarea class="input note-box" id="f-gnote" rows="2" placeholder="e.g. Out until November">${esc(g.note)}</textarea></div>` : ''}
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions"><button class="primary" type="submit">Save</button>
 			<button class="danger-btn${sheet.armed ? ' armed' : ''}" type="button" data-action="remove-player">${sheet.armed ? `Tap again to remove ${esc(p.name)}` : 'Remove from round'}</button>
@@ -1114,6 +1167,7 @@ function keepRoundDraft() {
 		date: $('f-date').value,
 		notes: $('f-notes').value,
 		tentative: $('bk-tentative').checked,
+		bookOn: $('f-bookon').value,
 	};
 }
 function restoreRoundDraft() {
@@ -1122,6 +1176,8 @@ function restoreRoundDraft() {
 	$('f-date').value = sheet.draft.date;
 	$('f-notes').value = sheet.draft.notes;
 	$(sheet.draft.tentative ? 'bk-tentative' : 'bk-booked').checked = true;
+	$('bookOnField').hidden = !sheet.draft.tentative;
+	$('f-bookon').value = sheet.draft.bookOn;
 }
 
 function submitRound() {
@@ -1133,6 +1189,7 @@ function submitRound() {
 	const teeTimes = sheet.times.filter(t => t.time).map(t => ({id: t.id, time: t.time}));
 	const notes = $('f-notes').value.trim();
 	const tentative = $('bk-tentative').checked;
+	const bookOn = tentative ? $('f-bookon').value : '';
 	if (sheet.roundId) {
 		const keep = new Set(teeTimes.map(t => t.id));
 		editRound(sheet.roundId, r => {
@@ -1140,6 +1197,7 @@ function submitRound() {
 			r.date = date;
 			r.notes = notes;
 			r.tentative = tentative;
+			r.bookOn = bookOn;
 			r.teeTimes = teeTimes;
 			r.players.forEach(p => { if (p.teeTimeId && !keep.has(p.teeTimeId)) p.teeTimeId = ''; });
 		});
@@ -1149,7 +1207,7 @@ function submitRound() {
 	}
 	const sorted = [...teeTimes].sort((a, b) => a.time.localeCompare(b.time));
 	const players = [{id: uid(), name: OWNER_NAME, status: 'in', teeTimeId: sorted[0]?.id ?? ''}];
-	const round = {id: uid(), course, date, notes, tentative, teeTimes, players, example: false};
+	const round = {id: uid(), course, date, notes, tentative, bookOn, teeTimes, players, example: false};
 	saveDoc('rounds', round);
 	closeSheet();
 	view = {name: 'round', roundId: round.id};
@@ -1165,6 +1223,9 @@ function submitEditPlayer() {
 	if (r.players.some(p => p.id !== sheet.pid && p.name.toLowerCase() === name.toLowerCase())) return showErr(`${name} is already on this round.`);
 	const status = $('sheet').querySelector('input[name="status"]:checked')?.value;
 	const note = $('f-note').value.trim();
+	const g = regularFor(r.players.find(p => p.id === sheet.pid));
+	const golferNote = $('f-gnote')?.value.trim();
+	if (g && golferNote !== undefined && golferNote !== g.note) saveDoc('regulars', {...g, note: golferNote});
 	editRound(r.id, x => {
 		const p = x.players.find(y => y.id === sheet.pid);
 		Object.assign(p, {name, status, note});
@@ -1252,7 +1313,10 @@ document.addEventListener('click', ev => {
 	} else if (action === 'invite-players' && r) {
 		openSheet('invite-players', {roundId: r.id, tee: btn.dataset.tee, selected: new Set()});
 	} else if (action === 'mark-booked' && r) {
-		editRound(r.id, x => { x.tentative = false; });
+		editRound(r.id, x => {
+			x.tentative = false;
+			x.bookOn = '';
+		});
 		toast('Marked as booked');
 	} else if (action === 'show-new-person') {
 		$('newPerson').hidden = false;
@@ -1379,6 +1443,7 @@ document.addEventListener('input', ev => {
 });
 
 document.addEventListener('change', ev => {
+	if (ev.target.name === 'booking' && $('bookOnField')) $('bookOnField').hidden = ev.target.value !== 'tentative';
 	if (ev.target.id === 'f-save' && $('leagueCheck')) $('leagueCheck').hidden = !ev.target.checked;
 });
 
