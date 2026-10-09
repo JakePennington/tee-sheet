@@ -237,14 +237,13 @@ body.drag-in .drop-only { display: block; }
 .danger-btn.armed { background: var(--out); border-color: var(--out); color: var(--surface); }
 
 /* Sheet */
-.sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.sheet-wrap { position: fixed; top: 0; left: 0; right: 0; height: 100%; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
 .scrim { position: absolute; inset: 0; background: var(--scrim); }
 .sheet {
 	position: relative;
 	width: 100%;
 	max-width: 560px;
-	max-height: 90vh;
-	max-height: 90dvh;
+	max-height: 92%;
 	overflow-y: auto;
 	overflow-x: hidden;
 	overscroll-behavior: contain;
@@ -791,17 +790,8 @@ function golferNoteHtml(g) {
 	return g?.note ? `<span class="p-note g-note">${esc(g.note)}</span>` : '';
 }
 const IS_APPLE = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
-async function shareText(text) {
-	if (navigator.share) {
-		try {
-			await navigator.share({text});
-			return true;
-		} catch (shareErr) {
-			if (shareErr?.name === 'AbortError') return false;
-		}
-	}
+function openMessages(text) {
 	location.href = `sms:${IS_APPLE ? '&' : '?'}body=${encodeURIComponent(text)}`;
-	return true;
 }
 function textedLabel(iso) {
 	const d = new Date(iso);
@@ -965,10 +955,20 @@ function renderRegulars() {
 }
 
 /* Sheets */
+// Keep the sheet above the on-screen keyboard: size it to the visible part of the screen.
+function fitSheet() {
+	const vv = window.visualViewport;
+	if (!vv || $('sheetWrap').hidden) return;
+	$('sheetWrap').style.top = `${vv.offsetTop}px`;
+	$('sheetWrap').style.height = `${vv.height}px`;
+}
+window.visualViewport?.addEventListener('resize', fitSheet);
+window.visualViewport?.addEventListener('scroll', fitSheet);
 function openSheet(kind, data) {
 	sheet = {kind, ...data};
 	$('sheet').innerHTML = sheetHtml();
 	$('sheetWrap').hidden = false;
+	fitSheet();
 	document.body.style.overflow = 'hidden';
 	const focusEl = $('sheet').querySelector('[data-autofocus]');
 	if (focusEl) focusEl.focus();
@@ -977,6 +977,8 @@ function openSheet(kind, data) {
 function closeSheet() {
 	sheet = null;
 	$('sheetWrap').hidden = true;
+	$('sheetWrap').style.top = '';
+	$('sheetWrap').style.height = '';
 	$('sheet').innerHTML = '';
 	document.body.style.overflow = '';
 }
@@ -1141,7 +1143,7 @@ function messageSheet() {
 		<p class="hint" id="copyHint" hidden>Copying didn’t work in this browser. The text is selected, so copy it yourself.</p>
 		<div class="sheet-actions two">
 			<button class="secondary" type="button" data-action="copy-message">Copy text</button>
-			<button class="primary with-icon" type="button" data-action="share-message">${icoMessage}Text it</button>
+			<button class="primary with-icon" type="button" data-action="text-message">${icoMessage}Text it</button>
 		</div>
 	</div>`;
 }
@@ -1158,7 +1160,7 @@ function sendInvitesSheet() {
 	return sheetHead(players.length === 1 ? `Invited ${players[0].name}` : `Invited ${players.length} golfers`) + `<div class="form">
 		<div class="field"><label for="f-message">Message</label><textarea class="input message-box" id="f-message">${esc(sheet.text)}</textarea></div>
 		<section class="list-card"><ul class="slots" id="sendList">${players.map(sendRow).join('')}</ul></section>
-		<p class="hint">Text opens the share sheet with this message. Pick Messages, then who to send it to.</p>
+		<p class="hint">Text opens Messages with this filled in. Pick who to send it to.</p>
 		<div class="sheet-actions"><button class="primary" type="button" data-action="close-sheet">Done</button></div>
 	</div>`;
 }
@@ -1349,20 +1351,18 @@ document.addEventListener('click', ev => {
 		const pid = btn.dataset.pid;
 		const roundId = sheet?.roundId ?? view.roundId;
 		const fromSendList = sheet?.kind === 'send-invites';
-		shareText(fromSendList ? sheet.text : inviteText(findRound(roundId))).then(sent => {
-			if (!sent) return;
-			if (fromSendList && sheet?.kind === 'send-invites') {
-				sheet.sent.add(pid);
-				btn.innerHTML = `${icoCheck}Texted`;
-				btn.closest('li').classList.add('is-sent');
-			}
-			editRound(roundId, x => {
-				const p = x.players.find(y => y.id === pid);
-				if (p) p.textedAt = new Date().toISOString();
-			});
+		openMessages(fromSendList ? sheet.text : inviteText(findRound(roundId)));
+		if (fromSendList) {
+			sheet.sent.add(pid);
+			btn.innerHTML = `${icoCheck}Texted`;
+			btn.closest('li').classList.add('is-sent');
+		}
+		editRound(roundId, x => {
+			const p = x.players.find(y => y.id === pid);
+			if (p) p.textedAt = new Date().toISOString();
 		});
-	} else if (action === 'share-message') {
-		shareText(sheet.text);
+	} else if (action === 'text-message') {
+		openMessages(sheet.text);
 	} else if (action === 'show-new-person') {
 		$('newPerson').hidden = false;
 		btn.hidden = true;

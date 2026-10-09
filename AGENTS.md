@@ -62,7 +62,7 @@ Round `data` shape:
 - Older rounds may have a `guestOf` field from a removed guest feature; it's ignored.
 - New rounds always start with the owner (`ownerName`) as In on the first tee time; there's no "I'm playing" option. The owner removes themselves from the round if they won't play.
 - Players saved with the old name `"Me"` are shown as `ownerName` by `normalize()` and saved with it on the next edit.
-- `textedAt` (ISO timestamp) records the last time the owner sent an invite to a pending golfer through the share sheet; shown as "Texted today" / "Texted Oct 7".
+- `textedAt` (ISO timestamp) records the last time the owner tapped Text for a pending golfer; shown as "Texted today" / "Texted Oct 7".
 - `note` is optional free text for that golfer on that round, shown under their name and edited from the player panel.
 - `regularId` links a player to a regular; older players without one are matched to a regular by name (case-insensitive).
 
@@ -93,7 +93,8 @@ Regular (golfer) `data` shape:
 - **Invite players** (`invitePlayersSheet`) lists golfers not already on the round as a ranked multi-select checklist. "Someone not in your golfers?" reveals a name field with Save to golfers / men's league options (shown up front only when no golfers are left). Invitees start as `pending` with no tee time, then the panel becomes **Text your invites** (`sendInvitesSheet`): an editable message and a Text button per invitee.
 - **Drag and drop** on a round: every golfer has a grip. Dragging a Pending or Out golfer onto a tee time marks them **In** there (if dropped on a golfer, that golfer keeps In status but loses their tee time); the "No tee time yet" drop zone appears only when dragging an In golfer. Dragging it uses pointer events (`touch-action: none` on the grip only, so the page still scrolls normally). For In golfers, drop on a golfer in another group to swap tee times, or on a group with room (or the "No tee time yet" zone) to move them. `render()` is skipped while a drag is in progress.
 - **Updates:** `sw.js` serves page loads network-first. `reloadIfUpdated()` also fetches the page on open and whenever the app returns to the foreground, and reloads if the HTML changed since launch.
-- **Texting** (`shareText`) opens the system share sheet (`navigator.share({text})`) so the owner picks Messages and the recipient; no phone numbers are stored. A cancelled share (`AbortError`) does nothing; without Web Share it falls back to a blank `sms:` message (`&body=` on Apple devices, `?body=` elsewhere). A golfer is marked `textedAt` only after a share completes. Pending golfers on a round get a message button; the Invite text panel has Text it.
+- **Texting** (`openMessages`) opens a new Messages compose with the invite filled in via `sms:&body=` (`?body=` on non-Apple devices); the owner picks the recipient in Messages, and no phone numbers are stored. The iOS share sheet was tried first and didn't offer Messages from the home-screen app. The app can't know whether the text was sent, so `textedAt` is set on tap.
+- **Keyboard:** `fitSheet()` sizes the bottom-sheet wrapper to `visualViewport` so sheets sit above the on-screen keyboard (search results and sticky buttons stay visible). Pending golfers on a round get a message button; the Invite text panel has Text it.
 - **Sign out** lives only on the Golfers screen footer.
 - **Edits** happen in bottom sheets (`openSheet(kind, data)`). Confirmations are inline ("Tap again to delete"), not `confirm()` dialogs.
 
