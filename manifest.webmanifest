@@ -1,0 +1,15 @@
+{
+	"name": "Tee Sheet",
+	"short_name": "Tee Sheet",
+	"description": "Upcoming golf rounds, tee times, and who's in.",
+	"start_url": "./",
+	"scope": "./",
+	"display": "standalone",
+	"background_color": "#F2F4EF",
+	"theme_color": "#1C3B61",
+	"icons": [
+		{"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+		{"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+		{"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+	]
+}
