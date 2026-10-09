@@ -168,7 +168,8 @@ p { margin: 0; }
 
 .tee, .list-card { margin-top: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
 .tee-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--surface-2); }
-.tee-time { font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.tee-time { display: inline-flex; align-items: baseline; padding: 0; border: 0; background: none; color: var(--ink); font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.tee-edit-icon { align-self: center; margin-left: 8px; color: var(--ink-2); opacity: .7; }
 .tee-time small { font-size: 16px; font-weight: 600; margin-left: 3px; letter-spacing: .05em; color: var(--ink-2); }
 .tee-label { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .08em; text-transform: uppercase; }
 .tee-fill { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
@@ -214,7 +215,7 @@ body.is-dragging { -webkit-user-select: none; user-select: none; cursor: grabbin
 .tee.drop-target { box-shadow: 0 0 0 2px var(--accent); }
 .drop-only { display: none; }
 body.is-dragging .drop-only { display: block; }
-.drop-hint { margin: 0; padding: 14px; color: var(--ink-2); font-size: 14px; }
+.drop-only .tee-head { min-height: 64px; }
 .hint { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
 
 .row-actions { display: grid; gap: 10px; margin-top: 18px; }
@@ -307,8 +308,12 @@ textarea.input { min-height: 80px; resize: vertical; }
 .seg.two { grid-template-columns: repeat(2, 1fr); }
 .seg input[value="booked"]:checked + label { background: var(--in-bg); border-color: var(--in); color: var(--in); }
 .seg input[value="tentative"]:checked + label { background: var(--pending-bg); border-color: var(--pending); border-style: dashed; color: var(--pending); }
-.chip.tentative { background: transparent; color: var(--pending); border: 1.5px dashed var(--pending); padding: 1px 8px; }
-.chip.tentative.due { background: var(--pending); color: var(--surface); border-style: solid; }
+.card.tentative { background: var(--pending-bg); border: 1.5px dashed var(--pending); box-shadow: none; }
+.card.tentative.due { border-style: solid; }
+.card.tentative .cal { background: var(--surface); color: var(--pending); }
+.card.tentative .cal-dow, .card.tentative .cal-mon { color: var(--pending); }
+.card.tentative .chip.pending { background: var(--surface); }
+.card-flag { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--pending); }
 .opt { font-weight: 500; text-transform: none; letter-spacing: 0; }
 .booking-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 12px 12px 12px 14px; border-radius: var(--radius); background: var(--pending-bg); border: 1.5px dashed var(--pending); }
 .booking-card.due { border-style: solid; }
@@ -736,19 +741,20 @@ function meterHtml(r) {
 function cardHtml(r, past) {
 	const c = counts(r);
 	const chips = [
-		r.tentative ? `<span class="chip tentative${bookDue(r) ? ' due' : ''}">${bookChipText(r)}</span>` : '',
 		c.in ? `<span class="chip in">${c.in} in</span>` : '',
 		c.pending ? `<span class="chip pending">${c.pending} pending</span>` : '',
 		c.out ? `<span class="chip out">${c.out} out</span>` : '',
 		r.example ? '<span class="chip tag">Example</span>' : '',
 	].join('');
-	return `<button class="card${past ? ' past' : ''}" data-action="open" data-id="${esc(r.id)}">
+	const tentative = r.tentative && !past;
+	return `<button class="card${past ? ' past' : ''}${tentative ? ' tentative' : ''}${tentative && bookDue(r) ? ' due' : ''}" data-action="open" data-id="${esc(r.id)}">
 		<span class="cal">
 			<span class="cal-dow">${esc(fmtDate(r.date, {weekday: 'short'}).toUpperCase())}</span>
 			<span class="cal-day">${parseDate(r.date).getDate()}</span>
 			<span class="cal-mon">${esc(fmtDate(r.date, {month: 'short'}).toUpperCase())}</span>
 		</span>
 		<span class="card-body">
+			${tentative ? `<span class="card-flag">${tentativeLabel(r)}</span>` : ''}
 			<span class="card-top"><span class="card-title">${esc(r.course)}</span><span class="card-when">${esc(relDay(r.date))}</span></span>
 			${r.teeTimes.length
 				? `<span class="card-times">${esc(fmtTimes(r.teeTimes))}</span>`
@@ -772,7 +778,7 @@ function renderList() {
 	if (!loaded) {
 		html += `<div class="empty"><strong>Loading your rounds…</strong><span>Upcoming tee times will show here.</span></div>`;
 	} else if (!upcoming.length) {
-		html += `<div class="section-label">Upcoming</div><div class="empty"><strong>No rounds on the books</strong><span>Tap “New round” to add a course, date and tee times.</span></div>`;
+		html += `<div class="section-label">Upcoming</div><div class="empty"><strong>No rounds on the books</strong></div>`;
 	} else {
 		html += `<div class="section-label"><span>Upcoming · ${upcoming.length}</span>${waiting ? `<span class="chip pending">Waiting on ${waiting}</span>` : ''}</div>`;
 		html += `<div class="cards">${upcoming.map(r => cardHtml(r, false)).join('')}</div>`;
@@ -809,9 +815,8 @@ function playerRow(r, p) {
 		<button class="pill ${p.status}" data-action="cycle" data-pid="${esc(p.id)}" aria-label="${esc(p.name)} is ${STATUS_LABEL[p.status]}. Tap to change.">${STATUS_LABEL[p.status]}</button>
 	</li>`;
 }
-function dropZone(status, label, hint) {
-	return `<section class="tee drop-only" data-drop-status="${status}"${status === 'in' ? ' data-drop-tee=""' : ''}><div class="tee-head"><span class="tee-label">${label}</span></div>
-		<p class="drop-hint">${hint}</p></section>`;
+function dropZone(status, label) {
+	return `<section class="tee drop-only" data-drop-status="${status}"${status === 'in' ? ' data-drop-tee=""' : ''}><div class="tee-head"><span class="tee-label">${label}</span></div></section>`;
 }
 function openSlot(label) {
 	return `<li><button class="open-slot" data-action="invite-players"><span class="plus" aria-hidden="true">+</span>${label}</button></li>`;
@@ -819,10 +824,10 @@ function openSlot(label) {
 function bookDue(r) {
 	return r.tentative && !!r.bookOn && daysUntil(r.bookOn) <= 0;
 }
-function bookChipText(r) {
+function tentativeLabel(r) {
 	if (!r.bookOn) return 'Tentative';
-	if (bookDue(r)) return 'Book now';
-	return `Book ${fmtDate(r.bookOn, {month: 'short', day: 'numeric'})}`;
+	if (bookDue(r)) return 'Tentative · Book now';
+	return `Tentative · Book ${fmtDate(r.bookOn, {month: 'short', day: 'numeric'})}`;
 }
 function bookingCard(r) {
 	let when = '';
@@ -872,7 +877,7 @@ function renderRound(r) {
 		}
 		html += `<section class="tee" data-drop-status="in" data-drop-tee="${esc(t.id)}" data-full="${ps.length >= t.spots}" aria-label="${esc(fmtTime(t.time))} tee time">
 			<div class="tee-head">
-				<span class="tee-time">${clock}<small>${mer}</small></span>
+				<button class="tee-time" data-action="edit-tee" data-tee="${esc(t.id)}" aria-label="Change the ${esc(fmtTime(t.time))} tee time">${clock}<small>${mer}</small><span class="tee-edit-icon">${icoPencil}</span></button>
 				<span class="tee-fill${over ? ' over' : ''}">${over ? `${ps.length} booked, max ${t.spots}` : `${ps.length} of ${t.spots}`}${meterHtml({teeTimes: [t], players: ps})}</span>
 				<button class="tee-remove${armedTee === t.id ? ' armed' : ''}" data-action="remove-tee" data-tee="${esc(t.id)}" aria-label="Remove the ${esc(fmtTime(t.time))} tee time">${armedTee === t.id ? 'Remove?' : icoRemove}</button>
 			</div>
@@ -887,9 +892,8 @@ function renderRound(r) {
 	if (unassigned.length || !r.teeTimes.length) {
 		html += `<section class="tee" data-drop-status="in" data-drop-tee=""><div class="tee-head"><span class="tee-label">${r.teeTimes.length ? 'No tee time yet' : 'Playing'}</span><span class="tee-fill">${unassigned.length}</span></div>
 			<ul class="slots">${unassigned.map(p => playerRow(r, p)).join('')}${!unassigned.length ? openSlot('Invite players') : ''}</ul></section>`;
-		if (!r.teeTimes.length) html += '<p class="hint">Add tee times from “Edit round” to split players into groups of four.</p>';
 	} else {
-		html += dropZone('in', 'No tee time yet', 'Drop here to mark them In without a tee time');
+		html += dropZone('in', 'No tee time yet');
 	}
 
 	const pending = r.players.filter(p => p.status === 'pending').sort(byStatusThenLeague);
@@ -897,7 +901,7 @@ function renderRound(r) {
 		html += `<section class="tee" data-drop-status="pending"><div class="tee-head"><span class="tee-label">Waiting to hear back</span><span class="tee-fill">${pending.length}</span></div>
 			<ul class="slots">${pending.map(p => playerRow(r, p)).join('')}</ul></section>`;
 	} else {
-		html += dropZone('pending', 'Waiting to hear back', 'Drop here to mark them Pending');
+		html += dropZone('pending', 'Waiting to hear back');
 	}
 
 	const out = r.players.filter(p => p.status === 'out');
@@ -905,7 +909,7 @@ function renderRound(r) {
 		html += `<section class="tee" data-drop-status="out"><div class="tee-head"><span class="tee-label">Can’t make it</span><span class="tee-fill">${out.length}</span></div>
 			<ul class="slots">${out.map(p => playerRow(r, p)).join('')}</ul></section>`;
 	} else {
-		html += dropZone('out', 'Can’t make it', 'Drop here to mark them Out');
+		html += dropZone('out', 'Can’t make it');
 	}
 
 	html += `<div class="row-actions">
@@ -937,12 +941,12 @@ function renderRegulars() {
 	const league = ranked.filter(g => g.league);
 	const others = ranked.filter(g => !g.league);
 	const unsaved = unsavedNames();
-	let html = '<div class="page-head"><h1 class="course">Golfers</h1><p class="when">Golfers who’ve said yes to the most rounds show first when you invite players.</p></div>';
+	let html = '<div class="page-head"><h1 class="course">Golfers</h1></div>';
 	if (unsaved.length) {
 		html += `<div class="notice"><span>${unsaved.length} ${unsaved.length === 1 ? 'person' : 'people'} from your rounds ${unsaved.length === 1 ? 'isn’t' : 'aren’t'} saved yet.</span><button data-action="import-regulars">Add ${unsaved.length === 1 ? 'them' : 'all'}</button></div>`;
 	}
 	if (!regulars.length) {
-		html += '<div class="empty"><strong>No golfers yet</strong><span>Add the people you play with, and mark who’s in men’s league.</span></div>';
+		html += '<div class="empty"><strong>No golfers yet</strong></div>';
 	}
 	if (league.length) {
 		html += `<div class="section-label">Men’s league · ${league.length}</div><section class="list-card"><ul class="slots">${league.map(g => regularRow(g, stats)).join('')}</ul></section>`;
@@ -998,6 +1002,7 @@ function sheetHtml() {
 	if (sheet.kind === 'edit-player') return editPlayerSheet();
 	if (sheet.kind === 'message') return messageSheet();
 	if (sheet.kind === 'send-invites') return sendInvitesSheet();
+	if (sheet.kind === 'tee') return teeSheet();
 	if (sheet.kind === 'regular') return regularSheet();
 	return '';
 }
@@ -1015,12 +1020,11 @@ function roundSheet() {
 		</div></div>
 		<div class="field" id="bookOnField"${r?.tentative ? '' : ' hidden'}><label for="f-bookon">Book on <span class="opt">optional</span></label>
 			<div class="picker-wrap"><input class="input" type="date" id="f-bookon" value="${esc(r?.bookOn ?? '')}"><span class="picker-icon">${icoCalendar}</span></div>
-			<p class="hint">When these tee times open up for booking.</p>
 		</div>
-		<div class="field"><span class="lbl">Tee times</span><div class="times">
+		${r ? '' : `<div class="field"><span class="lbl">Tee times</span><div class="times">
 			${times.map((t, i) => `<div class="time-row"><div class="picker-wrap"><input class="input" type="time" id="f-time-${esc(t.id)}" data-time-id="${esc(t.id)}" value="${esc(t.time)}" step="60" aria-label="Tee time ${i + 1}"><span class="picker-icon">${icoClock}</span></div><select class="input spots-select" data-spots-id="${esc(t.id)}" aria-label="Players booked for tee time ${i + 1}">${[1, 2, 3, 4].map(n => `<option value="${n}"${t.spots === n ? ' selected' : ''}>${n} player${n === 1 ? '' : 's'}</option>`).join('')}</select><button class="remove-time" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">${icoRemove}</button></div>`).join('')}
 			<button class="add-time" type="button" data-action="add-time">+ Add tee time</button>
-		</div></div>
+		</div></div>`}
 		<div class="field"><label for="f-notes">Notes</label><textarea class="input" id="f-notes" name="notes" placeholder="Carts, green fees, who’s driving…">${esc(r?.notes ?? '')}</textarea></div>
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions"><button class="primary" type="submit">${r ? 'Save changes' : 'Create round'}</button>
@@ -1046,7 +1050,7 @@ function invitePlayersSheet() {
 	const r = findRound(sheet.roundId);
 	const available = rankedRegulars().filter(g => !onRound(r, g));
 	const showNew = !available.length;
-	let list = '<p class="hint">Save golfers from the Golfers screen and they’ll show here to pick from.</p>';
+	let list = '';
 	if (available.length) list = `<section class="list-card picker"><ul class="slots" id="pickList">${pickRows(r)}</ul></section>`;
 	else if (regulars.length) list = '<p class="hint">All your golfers are already on this round.</p>';
 	return sheetHead('Invite players') + `<form class="form" id="invitePlayersForm" novalidate>
@@ -1061,7 +1065,6 @@ function invitePlayersSheet() {
 				<label class="check" id="leagueCheck"><input type="checkbox" id="f-league">In men’s league</label>
 			</div>
 		</div>
-		<p class="hint">Invited golfers wait under “Waiting to hear back.” Drag one onto a tee time to confirm them.</p>
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions sticky"><button class="primary" type="submit" id="inviteBtn">${inviteLabel()}</button></div>
 	</form>`;
@@ -1097,7 +1100,7 @@ function regularSheet() {
 	return sheetHead(g ? g.name : 'Add golfer') + `<form class="form" id="regularForm" novalidate>
 		<div class="field"><label for="f-name">Name</label><input class="input" id="f-name" name="name" autocomplete="off" autocapitalize="words" value="${esc(g?.name ?? '')}"${g ? '' : ' data-autofocus'}></div>
 		<label class="check"><input type="checkbox" id="f-league"${g?.league || sheet.league ? ' checked' : ''}>In men’s league</label>
-		<div class="field"><label for="f-gnote">Note</label><textarea class="input note-box" id="f-gnote" rows="2" placeholder="e.g. Out until November. Shows on every round.">${esc(g?.note ?? '')}</textarea></div>
+		<div class="field"><label for="f-gnote">Note</label><textarea class="input note-box" id="f-gnote" rows="2" placeholder="e.g. Out until November">${esc(g?.note ?? '')}</textarea></div>
 		<p class="err" id="formErr" hidden></p>
 		${actions}
 	</form>`;
@@ -1139,7 +1142,6 @@ function editPlayerSheet() {
 
 function messageSheet() {
 	return sheetHead('Invite text') + `<div class="form">
-		<p class="hint">Edit it if you like, then copy it or open it in Messages.</p>
 		<textarea class="input message-box" id="f-message" aria-label="Invite text">${esc(sheet.text)}</textarea>
 		<p class="hint" id="copyHint" hidden>Copying didn’t work in this browser. The text is selected, so copy it yourself.</p>
 		<div class="sheet-actions two">
@@ -1147,6 +1149,26 @@ function messageSheet() {
 			<button class="primary with-icon" type="button" data-action="text-message">${icoMessage}Text it</button>
 		</div>
 	</div>`;
+}
+function teeSheet() {
+	const t = findRound(sheet.roundId).teeTimes.find(x => x.id === sheet.teeId);
+	if (!t) return '';
+	return sheetHead(`${fmtTime(t.time)} tee time`) + `<form class="form" id="teeForm" novalidate>
+		<div class="field"><label for="f-tee-time">Time</label><div class="picker-wrap"><input class="input" type="time" id="f-tee-time" value="${esc(t.time)}" step="60"><span class="picker-icon">${icoClock}</span></div></div>
+		<div class="field"><label for="f-tee-spots">Players booked</label><select class="input" id="f-tee-spots">${[1, 2, 3, 4].map(n => `<option value="${n}"${t.spots === n ? ' selected' : ''}>${n} player${n === 1 ? '' : 's'}</option>`).join('')}</select></div>
+		<p class="err" id="formErr" hidden></p>
+		<div class="sheet-actions"><button class="primary" type="submit">Save</button></div>
+	</form>`;
+}
+function submitTee() {
+	const time = $('f-tee-time').value;
+	if (!time) return showErr('Pick a time.');
+	const spots = Number($('f-tee-spots').value);
+	editRound(sheet.roundId, x => {
+		Object.assign(x.teeTimes.find(t => t.id === sheet.teeId), {time, spots});
+	});
+	closeSheet();
+	toast(`Tee time updated: ${fmtTime(time)}, ${spots} player${spots === 1 ? '' : 's'}`);
 }
 function sendRow(p) {
 	const sent = sheet.sent.has(p.id);
@@ -1161,7 +1183,6 @@ function sendInvitesSheet() {
 	return sheetHead(players.length === 1 ? `Invited ${players[0].name}` : `Invited ${players.length} golfers`) + `<div class="form">
 		<div class="field"><label for="f-message">Message</label><textarea class="input message-box" id="f-message">${esc(sheet.text)}</textarea></div>
 		<section class="list-card"><ul class="slots" id="sendList">${players.map(sendRow).join('')}</ul></section>
-		<p class="hint">Text opens Messages with this filled in. Pick who to send it to.</p>
 		<div class="sheet-actions"><button class="primary" type="button" data-action="close-sheet">Done</button></div>
 	</div>`;
 }
@@ -1213,25 +1234,22 @@ function submitRound() {
 	const date = $('f-date').value;
 	if (!course) return showErr('Add the course name.');
 	if (!date) return showErr('Pick a date.');
-	const teeTimes = sheet.times.filter(t => t.time).map(t => ({id: t.id, time: t.time, spots: t.spots}));
 	const notes = $('f-notes').value.trim();
 	const tentative = $('bk-tentative').checked;
 	const bookOn = tentative ? $('f-bookon').value : '';
 	if (sheet.roundId) {
-		const keep = new Set(teeTimes.map(t => t.id));
 		editRound(sheet.roundId, r => {
 			r.course = course;
 			r.date = date;
 			r.notes = notes;
 			r.tentative = tentative;
 			r.bookOn = bookOn;
-			r.teeTimes = teeTimes;
-			r.players.forEach(p => { if (p.teeTimeId && !keep.has(p.teeTimeId)) p.teeTimeId = ''; });
 		});
 		closeSheet();
 		toast('Round updated');
 		return;
 	}
+	const teeTimes = sheet.times.filter(t => t.time).map(t => ({id: t.id, time: t.time, spots: t.spots}));
 	const sorted = [...teeTimes].sort((a, b) => a.time.localeCompare(b.time));
 	const players = [{id: uid(), name: OWNER_NAME, status: 'in', teeTimeId: sorted[0]?.id ?? ''}];
 	const round = {id: uid(), course, date, notes, tentative, bookOn, teeTimes, players, example: false};
@@ -1313,7 +1331,9 @@ document.addEventListener('click', ev => {
 			defaultDate: `${nextSat.getFullYear()}-${pad(nextSat.getMonth() + 1)}-${pad(nextSat.getDate())}`,
 		});
 	} else if (action === 'edit-round' && r) {
-		openSheet('round', {roundId: r.id, times: r.teeTimes.map(t => ({...t}))});
+		openSheet('round', {roundId: r.id});
+	} else if (action === 'edit-tee' && r) {
+		openSheet('tee', {roundId: r.id, teeId: btn.dataset.tee});
 	} else if (action === 'add-tee' && r) {
 		const last = r.teeTimes[r.teeTimes.length - 1]?.time;
 		const time = last ? addMinutes(last, 10) : '08:00';
@@ -1466,6 +1486,7 @@ document.addEventListener('submit', ev => {
 	else if (form.id === 'invitePlayersForm') submitInvitePlayers();
 	else if (form.id === 'editPlayerForm') submitEditPlayer();
 	else if (form.id === 'signInForm') submitSignIn();
+	else if (form.id === 'teeForm') submitTee();
 	else if (form.id === 'regularForm') submitRegular(ev.submitter?.name === 'again');
 });
 
