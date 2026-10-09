@@ -322,6 +322,12 @@ textarea.input { min-height: 80px; resize: vertical; }
 .time-row { display: flex; gap: 8px; }
 .time-row .picker-wrap { flex: 1; }
 .time-row .input { font-variant-numeric: tabular-nums; }
+.time-row select.spots-select { flex: none; width: 116px; padding-inline: 10px 6px; }
+@media (max-width: 359px) {
+	.time-row { flex-wrap: wrap; }
+	.time-row .picker-wrap { flex-basis: 100%; }
+	.time-row select.spots-select { flex: 1; width: auto; }
+}
 .remove-time { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--line-strong); border-radius: 10px; background: var(--field); color: var(--out); }
 .remove-time:hover { background: var(--out-bg); border-color: var(--out); }
 .add-time { min-height: 44px; border: 1.5px dashed var(--line-strong); border-radius: 10px; background: none; color: var(--accent); font-weight: 600; }
@@ -363,7 +369,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script>
-const SLOTS_PER_TEE = 4;
+const MAX_SPOTS = 4;
 const OWNER_NAME = window.TEE_SHEET_CONFIG?.ownerName || 'Me';
 const STATUS_LABEL = {in: 'In', pending: 'Pending', out: 'Out'};
 const NEXT_STATUS = {pending: 'in', in: 'out', out: 'pending'};
@@ -447,7 +453,9 @@ function normalize(r) {
 		example: !!r.example,
 		tentative: !!r.tentative,
 		bookOn: r.tentative ? r.bookOn || '' : '',
-		teeTimes: Array.isArray(r.teeTimes) ? [...r.teeTimes].sort((a, b) => a.time.localeCompare(b.time)) : [],
+		teeTimes: (Array.isArray(r.teeTimes) ? r.teeTimes : [])
+			.map(t => ({id: t.id, time: t.time, spots: Math.min(MAX_SPOTS, Math.max(1, Number(t.spots) || MAX_SPOTS))}))
+			.sort((a, b) => a.time.localeCompare(b.time)),
 		players: (Array.isArray(r.players) ? r.players : []).map(p => (p.name === 'Me' ? {...p, name: OWNER_NAME} : p)),
 		createdAt: r.createdAt || '',
 		updatedAt: r.updatedAt || '',
@@ -459,7 +467,7 @@ function findRound(id) {
 function counts(r) {
 	const c = {in: 0, pending: 0, out: 0};
 	r.players.forEach(p => c[p.status]++);
-	const spots = r.teeTimes.length * SLOTS_PER_TEE;
+	const spots = r.teeTimes.reduce((n, t) => n + t.spots, 0);
 	return {...c, spots, open: spots - c.in};
 }
 function playersAt(r, teeId) {
@@ -468,7 +476,7 @@ function playersAt(r, teeId) {
 		.sort(byStatusThenLeague);
 }
 function firstOpenTee(r) {
-	const tee = r.teeTimes.find(t => playersAt(r, t.id).length < SLOTS_PER_TEE);
+	const tee = r.teeTimes.find(t => playersAt(r, t.id).length < t.spots);
 	return tee ? tee.id : '';
 }
 function setStatus(r, p, status) {
@@ -476,7 +484,8 @@ function setStatus(r, p, status) {
 	p.status = status;
 	p.teeTimeId = '';
 	if (status !== 'in') return;
-	const roomInPrev = r.teeTimes.some(t => t.id === prevTee) && playersAt(r, prevTee).length < SLOTS_PER_TEE;
+	const prev = r.teeTimes.find(t => t.id === prevTee);
+	const roomInPrev = prev && playersAt(r, prev.id).length < prev.spots;
 	p.teeTimeId = roomInPrev ? prevTee : firstOpenTee(r);
 }
 function statusToast(r, pid) {
@@ -718,9 +727,9 @@ function meterHtml(r) {
 	return '<div class="meter" aria-hidden="true">' + r.teeTimes.map(t => {
 		const ps = playersAt(r, t.id);
 		let dots = '';
-		for (let i = 0; i < Math.max(SLOTS_PER_TEE, ps.length); i++) {
+		for (let i = 0; i < Math.max(t.spots, ps.length); i++) {
 			const p = ps[i];
-			dots += `<span class="dot ${i >= SLOTS_PER_TEE ? 'over' : p ? p.status : ''}"></span>`;
+			dots += `<span class="dot ${i >= t.spots ? 'over' : p ? p.status : ''}"></span>`;
 		}
 		return `<span class="meter-group">${dots}</span>`;
 	}).join('') + '</div>';
@@ -851,15 +860,15 @@ function renderRound(r) {
 	r.teeTimes.forEach(t => {
 		const ps = playersAt(r, t.id);
 		const {clock, mer} = splitTime(t.time);
-		const over = ps.length > SLOTS_PER_TEE;
+		const over = ps.length > t.spots;
 		let open = '';
-		for (let i = ps.length; i < SLOTS_PER_TEE; i++) {
+		for (let i = ps.length; i < t.spots; i++) {
 			open += openSlot('Open spot');
 		}
-		html += `<section class="tee" data-drop-tee="${esc(t.id)}" data-full="${ps.length >= SLOTS_PER_TEE}" aria-label="${esc(fmtTime(t.time))} tee time">
+		html += `<section class="tee" data-drop-tee="${esc(t.id)}" data-full="${ps.length >= t.spots}" aria-label="${esc(fmtTime(t.time))} tee time">
 			<div class="tee-head">
 				<span class="tee-time">${clock}<small>${mer}</small></span>
-				<span class="tee-fill${over ? ' over' : ''}">${over ? `${ps.length} booked, max ${SLOTS_PER_TEE}` : `${ps.length} of ${SLOTS_PER_TEE}`}${meterHtml({teeTimes: [t], players: ps})}</span>
+				<span class="tee-fill${over ? ' over' : ''}">${over ? `${ps.length} booked, max ${t.spots}` : `${ps.length} of ${t.spots}`}${meterHtml({teeTimes: [t], players: ps})}</span>
 			</div>
 			<ul class="slots">${ps.map(p => playerRow(r, p)).join('')}${open}</ul>
 		</section>`;
@@ -988,7 +997,7 @@ function roundSheet() {
 			<p class="hint">When these tee times open up for booking.</p>
 		</div>
 		<div class="field"><span class="lbl">Tee times</span><div class="times">
-			${times.map((t, i) => `<div class="time-row"><div class="picker-wrap"><input class="input" type="time" id="f-time-${esc(t.id)}" data-time-id="${esc(t.id)}" value="${esc(t.time)}" step="60" aria-label="Tee time ${i + 1}"><span class="picker-icon">${icoClock}</span></div><button class="remove-time" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">${icoRemove}</button></div>`).join('')}
+			${times.map((t, i) => `<div class="time-row"><div class="picker-wrap"><input class="input" type="time" id="f-time-${esc(t.id)}" data-time-id="${esc(t.id)}" value="${esc(t.time)}" step="60" aria-label="Tee time ${i + 1}"><span class="picker-icon">${icoClock}</span></div><select class="input spots-select" data-spots-id="${esc(t.id)}" aria-label="Players booked for tee time ${i + 1}">${[1, 2, 3, 4].map(n => `<option value="${n}"${t.spots === n ? ' selected' : ''}>${n} player${n === 1 ? '' : 's'}</option>`).join('')}</select><button class="remove-time" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">${icoRemove}</button></div>`).join('')}
 			<button class="add-time" type="button" data-action="add-time">+ Add tee time</button>
 		</div></div>
 		<div class="field"><label for="f-notes">Notes</label><textarea class="input" id="f-notes" name="notes" placeholder="Carts, green fees, who’s driving…">${esc(r?.notes ?? '')}</textarea></div>
@@ -1184,6 +1193,10 @@ function readRoundTimes() {
 		const t = sheet.times.find(x => x.id === inp.dataset.timeId);
 		if (t) t.time = inp.value;
 	});
+	$('sheet').querySelectorAll('[data-spots-id]').forEach(sel => {
+		const t = sheet.times.find(x => x.id === sel.dataset.spotsId);
+		if (t) t.spots = Number(sel.value);
+	});
 }
 function keepRoundDraft() {
 	sheet.draft = {
@@ -1210,7 +1223,7 @@ function submitRound() {
 	const date = $('f-date').value;
 	if (!course) return showErr('Add the course name.');
 	if (!date) return showErr('Pick a date.');
-	const teeTimes = sheet.times.filter(t => t.time).map(t => ({id: t.id, time: t.time}));
+	const teeTimes = sheet.times.filter(t => t.time).map(t => ({id: t.id, time: t.time, spots: t.spots}));
 	const notes = $('f-notes').value.trim();
 	const tentative = $('bk-tentative').checked;
 	const bookOn = tentative ? $('f-bookon').value : '';
@@ -1300,19 +1313,19 @@ document.addEventListener('click', ev => {
 		nextSat.setDate(nextSat.getDate() + ((6 - nextSat.getDay() + 7) % 7 || 7));
 		openSheet('round', {
 			roundId: null,
-			times: [{id: uid(), time: '08:00'}],
+			times: [{id: uid(), time: '08:00', spots: MAX_SPOTS}],
 			defaultDate: `${nextSat.getFullYear()}-${pad(nextSat.getMonth() + 1)}-${pad(nextSat.getDate())}`,
 		});
 	} else if (action === 'edit-round' && r) {
 		openSheet('round', {roundId: r.id, times: r.teeTimes.map(t => ({...t}))});
 	} else if (action === 'add-tee' && r) {
 		const last = r.teeTimes[r.teeTimes.length - 1]?.time;
-		openSheet('round', {roundId: r.id, times: [...r.teeTimes.map(t => ({...t})), {id: uid(), time: last ? addMinutes(last, 10) : '08:00'}]});
+		openSheet('round', {roundId: r.id, times: [...r.teeTimes.map(t => ({...t})), {id: uid(), time: last ? addMinutes(last, 10) : '08:00', spots: MAX_SPOTS}]});
 	} else if (action === 'add-time') {
 		readRoundTimes();
 		keepRoundDraft();
 		const last = sheet.times.filter(t => t.time).map(t => t.time).sort().pop();
-		sheet.times.push({id: uid(), time: last ? addMinutes(last, 10) : '08:00'});
+		sheet.times.push({id: uid(), time: last ? addMinutes(last, 10) : '08:00', spots: MAX_SPOTS});
 		rerenderSheet();
 		restoreRoundDraft();
 	} else if (action === 'remove-time') {

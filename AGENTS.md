@@ -44,7 +44,7 @@ Round `data` shape:
   "example": false,
   "tentative": true,
   "bookOn": "2026-10-10",
-  "teeTimes": [{"id": "t1", "time": "08:10"}],
+  "teeTimes": [{"id": "t1", "time": "08:10", "spots": 4}],
   "players": [
     {"id": "p1", "name": "Jake Pennington", "regularId": "", "status": "in", "teeTimeId": "t1"},
     {"id": "p2", "name": "Dave", "regularId": "g1", "status": "pending", "teeTimeId": "t1", "note": "Needs the later tee time"}
@@ -57,7 +57,7 @@ Round `data` shape:
 - `tentative: true` means the tee times aren't booked yet (gauging interest). `bookOn` is an optional date when the tee times open for booking (cleared when booked). Shown as a Tentative / "Book Oct 10" / "Book now" tag on the home screen and a booking card with a "Mark booked" button on the round, and the invite text asks "you interested?" instead of "you in?". Missing means booked.
 - `date` is a local calendar date (`YYYY-MM-DD`); `time` is 24-hour `HH:MM`.
 - `status` is `in`, `pending` or `out`. **Only In players are in tee times.** Pending players show under "Waiting to hear back" and Out under "Can't make it". Status changes go through `setStatus()`: becoming In assigns their previous tee time if it has room, otherwise `firstOpenTee()`; becoming Pending or Out clears `teeTimeId`. Older rounds may have pending players with a `teeTimeId`; it's ignored for display and capacity.
-- Each tee time holds 4 In players (`SLOTS_PER_TEE`); open spots count only In players. Overbooking is allowed and shown as a warning.
+- Each tee time holds `spots` In players (1–4, the number booked; defaults to `MAX_SPOTS` = 4 when missing), set per tee time in the round form; open spots count only In players. Overbooking is allowed and shown as a warning.
 - `teeTimeId: ""` means no tee time yet. After a golfer is In, their tee time changes only by dragging on the round page.
 - Older rounds may have a `guestOf` field from a removed guest feature; it's ignored.
 - New rounds always start with the owner (`ownerName`) as In on the first tee time; there's no "I'm playing" option. The owner removes themselves from the round if they won't play.
