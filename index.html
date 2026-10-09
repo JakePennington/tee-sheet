@@ -23,6 +23,8 @@
 	--surface: #FFFFFF;
 	--surface-2: #E8ECE4;
 	--line: #D3DBCF;
+	--line-strong: #9FAE9C;
+	--field: #FFFFFF;
 	--ink: #16221B;
 	--ink-2: #5A685F;
 	--accent: #1C3B61;
@@ -42,14 +44,14 @@
 }
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme="light"]) {
-		--bg: #0E1511; --surface: #17201B; --surface-2: #1F2A23; --line: #2D3B32; --ink: #E5ECE6; --ink-2: #9AA99F;
+		--bg: #0E1511; --surface: #17201B; --surface-2: #1F2A23; --line: #2D3B32; --line-strong: #4C5F52; --field: #101813; --ink: #E5ECE6; --ink-2: #9AA99F;
 		--accent: #93B7E3; --accent-ink: #0B1626; --accent-soft: #1C2B3E; --in: #6FC48B; --in-bg: #173020; --pending: #E8B65A; --pending-bg: #33270E;
 		--out: #E58D83; --out-bg: #3A1C19; --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0, 0, 0, .3);
 		color-scheme: dark;
 	}
 }
 :root[data-theme="dark"] {
-	--bg: #0E1511; --surface: #17201B; --surface-2: #1F2A23; --line: #2D3B32; --ink: #E5ECE6; --ink-2: #9AA99F;
+	--bg: #0E1511; --surface: #17201B; --surface-2: #1F2A23; --line: #2D3B32; --line-strong: #4C5F52; --field: #101813; --ink: #E5ECE6; --ink-2: #9AA99F;
 	--accent: #93B7E3; --accent-ink: #0B1626; --accent-soft: #1C2B3E; --in: #6FC48B; --in-bg: #173020; --pending: #E8B65A; --pending-bg: #33270E;
 	--out: #E58D83; --out-bg: #3A1C19; --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0, 0, 0, .3);
 	color-scheme: dark;
@@ -266,11 +268,20 @@ body.is-dragging .drop-only { display: block; }
 	width: 100%;
 	min-height: 48px;
 	padding: 10px 12px;
-	border: 1px solid var(--line);
+	border: 1.5px solid var(--line-strong);
 	border-radius: 10px;
-	background: var(--bg);
+	background: var(--field);
+	color: var(--ink);
+	-webkit-text-fill-color: var(--ink);
+	opacity: 1;
 	font-size: 16px;
 }
+.input::placeholder { color: var(--ink-2); -webkit-text-fill-color: var(--ink-2); opacity: .75; }
+.input:focus, .input:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.picker-wrap { position: relative; min-width: 0; }
+.picker-wrap .input { padding-right: 46px; }
+.picker-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: grid; color: var(--accent); pointer-events: none; }
+.input::-webkit-calendar-picker-indicator { position: absolute; right: 0; top: 0; width: 46px; height: 100%; opacity: 0; cursor: pointer; }
 textarea.input { min-height: 80px; resize: vertical; }
 .input[type="date"], .input[type="time"] {
 	-webkit-appearance: none;
@@ -283,7 +294,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 .input::-webkit-date-and-time-value { text-align: left; }
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .seg input { position: absolute; opacity: 0; pointer-events: none; }
-.seg label { min-height: 46px; display: grid; place-items: center; border: 1.5px solid var(--line); border-radius: 10px; font-weight: 600; cursor: pointer; }
+.seg label { min-height: 46px; display: grid; place-items: center; border: 1.5px solid var(--line-strong); border-radius: 10px; font-weight: 600; cursor: pointer; }
 .seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
 .seg input[value="in"]:checked + label { background: var(--in-bg); border-color: var(--in); color: var(--in); }
 .seg input[value="pending"]:checked + label { background: var(--pending-bg); border-color: var(--pending); color: var(--pending); }
@@ -295,9 +306,11 @@ textarea.input { min-height: 80px; resize: vertical; }
 .tentative-note { margin: 12px 0 0; background: var(--pending-bg); border: 1.5px dashed var(--pending); color: var(--ink); }
 .times { display: grid; gap: 8px; }
 .time-row { display: flex; gap: 8px; }
-.time-row .input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
-.time-row .x { flex: none; width: 48px; height: 48px; border-radius: 10px; }
-.add-time { min-height: 44px; border: 1.5px dashed var(--line); border-radius: 10px; background: none; color: var(--accent); font-weight: 600; }
+.time-row .picker-wrap { flex: 1; }
+.time-row .input { font-variant-numeric: tabular-nums; }
+.remove-time { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--line-strong); border-radius: 10px; background: var(--field); color: var(--out); }
+.remove-time:hover { background: var(--out-bg); border-color: var(--out); }
+.add-time { min-height: 44px; border: 1.5px dashed var(--line-strong); border-radius: 10px; background: none; color: var(--accent); font-weight: 600; }
 .checks { display: grid; margin-top: -8px; }
 .check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 500; }
 .check input { width: 22px; height: 22px; accent-color: var(--accent); }
@@ -629,6 +642,9 @@ function editRound(id, mutate) {
 }
 
 /* Rendering */
+const icoCalendar = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
+const icoClock = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+const icoRemove = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const icoBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function render() {
@@ -887,13 +903,13 @@ function roundSheet() {
 	return sheetHead(r ? 'Edit round' : 'New round') + `<form class="form" id="roundForm" novalidate>
 		<datalist id="courseList">${knownCourses().map(c => `<option value="${esc(c)}"></option>`).join('')}</datalist>
 		<div class="field"><label for="f-course">Course</label><input class="input" id="f-course" name="course" list="courseList" autocomplete="off" value="${esc(r?.course ?? '')}" placeholder="e.g. Pine Hollow Golf Club" ${r ? '' : 'data-autofocus'}></div>
-		<div class="field"><label for="f-date">Date</label><input class="input" type="date" id="f-date" name="date" value="${esc(r?.date ?? sheet.defaultDate)}"></div>
+		<div class="field"><label for="f-date">Date</label><div class="picker-wrap"><input class="input" type="date" id="f-date" name="date" value="${esc(r?.date ?? sheet.defaultDate)}"><span class="picker-icon">${icoCalendar}</span></div></div>
 		<div class="field"><span class="lbl" id="bookingLbl">Tee times are</span><div class="seg two" role="radiogroup" aria-labelledby="bookingLbl">
 			<input type="radio" name="booking" id="bk-booked" value="booked"${r?.tentative ? '' : ' checked'}><label for="bk-booked">Booked</label>
 			<input type="radio" name="booking" id="bk-tentative" value="tentative"${r?.tentative ? ' checked' : ''}><label for="bk-tentative">Tentative</label>
 		</div></div>
 		<div class="field"><span class="lbl">Tee times</span><div class="times">
-			${times.map((t, i) => `<div class="time-row"><input class="input" type="time" id="f-time-${esc(t.id)}" data-time-id="${esc(t.id)}" value="${esc(t.time)}" step="60" aria-label="Tee time ${i + 1}"><button class="x" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">×</button></div>`).join('')}
+			${times.map((t, i) => `<div class="time-row"><div class="picker-wrap"><input class="input" type="time" id="f-time-${esc(t.id)}" data-time-id="${esc(t.id)}" value="${esc(t.time)}" step="60" aria-label="Tee time ${i + 1}"><span class="picker-icon">${icoClock}</span></div><button class="remove-time" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">${icoRemove}</button></div>`).join('')}
 			<button class="add-time" type="button" data-action="add-time">+ Add tee time</button>
 		</div></div>
 		<div class="field"><label for="f-notes">Notes</label><textarea class="input" id="f-notes" name="notes" placeholder="Carts, green fees, who’s driving…">${esc(r?.notes ?? '')}</textarea></div>
