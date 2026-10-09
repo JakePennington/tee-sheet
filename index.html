@@ -337,7 +337,6 @@ textarea.input { min-height: 80px; resize: vertical; }
 .remove-time { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--line-strong); border-radius: 10px; background: var(--field); color: var(--out); }
 .remove-time:hover { background: var(--out-bg); border-color: var(--out); }
 .add-time { min-height: 44px; border: 1.5px dashed var(--line-strong); border-radius: 10px; background: none; color: var(--accent); font-weight: 600; }
-.checks { display: grid; margin-top: -8px; }
 .check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 500; }
 .check input { width: 22px; height: 22px; accent-color: var(--accent); }
 .sheet-actions { display: grid; gap: 10px; margin-top: 4px; }
@@ -1060,13 +1059,7 @@ function invitePlayersSheet() {
 	return sheetHead('Invite players') + `<form class="form" id="invitePlayersForm" novalidate>
 		<datalist id="nameList">${unsavedNames().filter(n => !r.players.some(p => sameName(p.name, n))).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>
 		<button type="button" class="dashed-btn" id="showNewBtn" data-action="show-new-person"${showNew ? ' hidden' : ''}>+ New golfer</button>
-		<div class="form" id="newPerson"${showNew ? '' : ' hidden'}>
-			<div class="field"><label for="f-name">New golfer</label><input class="input" id="f-name" list="nameList" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
-			<div class="checks">
-				<label class="check"><input type="checkbox" id="f-save" checked>Save to golfers</label>
-				<label class="check" id="leagueCheck"><input type="checkbox" id="f-league">In men’s league</label>
-			</div>
-		</div>
+		<div class="field" id="newPerson"${showNew ? '' : ' hidden'}><label for="f-name">New golfer</label><input class="input" id="f-name" list="nameList" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
 		<p class="err" id="formErr" hidden></p>
 		${available.length > 8 ? '<input class="input" type="search" id="f-search" placeholder="Search golfers" autocomplete="off" aria-label="Search golfers">' : ''}
 		${list}
@@ -1081,11 +1074,11 @@ function submitInvitePlayers() {
 	if (name) {
 		if (r.players.some(p => sameName(p.name, name))) return showErr(`${name} is already on this round.`);
 		let g = regulars.find(x => sameName(x.name, name));
-		if (!g && $('f-save').checked) {
-			g = {id: uid(), name, league: $('f-league').checked};
+		if (!g) {
+			g = {id: uid(), name, league: false};
 			saveDoc('regulars', g);
 		}
-		if (!picked.some(x => x.id === g?.id)) invitees.push({name, regularId: g?.id ?? ''});
+		if (!picked.some(x => x.id === g.id)) invitees.push({name: g.name, regularId: g.id});
 	}
 	if (!invitees.length) return showErr('Pick at least one golfer, or type a name.');
 	const pids = invitees.map(() => uid());
@@ -1516,7 +1509,6 @@ document.addEventListener('input', ev => {
 
 document.addEventListener('change', ev => {
 	if (ev.target.name === 'booking' && $('bookOnField')) $('bookOnField').hidden = ev.target.value !== 'tentative';
-	if (ev.target.id === 'f-save' && $('leagueCheck')) $('leagueCheck').hidden = !ev.target.checked;
 });
 
 /* Drag a golfer by its grip onto another golfer (swap tee times) or onto a group with room (move) */
