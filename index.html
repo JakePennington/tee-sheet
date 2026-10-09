@@ -192,10 +192,6 @@ textarea.input.note-box { min-height: 64px; }
 .pill.pending { background: var(--pending-bg); color: var(--pending); border-color: var(--pending); border-style: dashed; }
 .pill.pending::before { background: transparent; border: 1.5px solid currentColor; width: 7px; height: 7px; }
 .pill.out { background: var(--out-bg); color: var(--out); }
-.pill.league-toggle { min-width: 112px; background: transparent; color: var(--ink-2); border: 1.5px dashed var(--line); }
-.pill.league-toggle::before { background: transparent; border: 1.5px solid currentColor; width: 7px; height: 7px; }
-.pill.league-toggle.on { background: var(--accent-soft); color: var(--accent); border: 1.5px solid transparent; }
-.pill.league-toggle.on::before { background: currentColor; border: 0; width: 8px; height: 8px; }
 .league { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; vertical-align: 2px; }
 .page-head { margin-bottom: 16px; }
 .picker { margin-top: 0; }
@@ -381,7 +377,6 @@ let loaded = false;
 let storeMode = 'loading';
 let sb = null;
 let userId = null;
-let userEmail = '';
 let channel = null;
 const deletedKeys = new Set();
 let view = {name: 'list', roundId: null};
@@ -479,20 +474,14 @@ function firstOpenTee(r) {
 	const tee = r.teeTimes.find(t => playersAt(r, t.id).length < t.spots);
 	return tee ? tee.id : '';
 }
-function setStatus(r, p, status) {
-	const prevTee = p.teeTimeId;
+function setStatus(p, status) {
 	p.status = status;
 	p.teeTimeId = '';
-	if (status !== 'in') return;
-	const prev = r.teeTimes.find(t => t.id === prevTee);
-	const roomInPrev = prev && playersAt(r, prev.id).length < prev.spots;
-	p.teeTimeId = roomInPrev ? prevTee : firstOpenTee(r);
 }
 function statusToast(r, pid) {
 	const p = r.players.find(x => x.id === pid);
-	const tee = r.teeTimes.find(t => t.id === p.teeTimeId);
-	if (p.status !== 'in' || !r.teeTimes.length) return `${p.name}: ${STATUS_LABEL[p.status]}`;
-	return tee ? `${p.name}: In · ${fmtTime(tee.time)}` : `${p.name}: In · no open tee time`;
+	if (p.status === 'in' && r.teeTimes.length) return `${p.name}: In · drag to a tee time`;
+	return `${p.name}: ${STATUS_LABEL[p.status]}`;
 }
 function nameOf(r, pid) {
 	return r.players.find(p => p.id === pid)?.name ?? '';
@@ -700,7 +689,7 @@ function render() {
 	else if (view.name === 'regulars') renderRegulars();
 	else renderList();
 	if (storeMode === 'cloud' && view.name === 'regulars') {
-		$('foot').innerHTML = `<span>Signed in as ${esc(userEmail)}</span><button data-action="sign-out">Sign out</button>`;
+		$('foot').innerHTML = '<button data-action="sign-out">Sign out</button>';
 	} else if (storeMode === 'local') {
 		$('foot').textContent = 'Saved on this device only. Add your Supabase keys to config.js to sync across devices.';
 	} else {
@@ -840,7 +829,7 @@ function bookingCard(r) {
 }
 function renderRound(r) {
 	const c = counts(r);
-	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Rounds</button>`;
+	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Tee Sheet</button>`;
 	let html = `<div class="round-head">
 			<div class="round-title">
 				<h1 class="course">${esc(r.course)}</h1>
@@ -913,16 +902,15 @@ function playedLabel(s) {
 function regularRow(g, stats) {
 	return `<li class="player">
 		<button class="p-main" data-action="edit-regular" data-gid="${esc(g.id)}">
-			<span class="p-name">${esc(g.name)}</span>
+			<span class="p-name">${esc(g.name)}${g.league ? '<span class="league">League</span>' : ''}</span>
 			<span class="p-sub">${playedLabel(stats(g))}</span>
 			${golferNoteHtml(g)}
 		</button>
-		<button class="pill league-toggle${g.league ? ' on' : ''}" data-action="toggle-league" data-gid="${esc(g.id)}" aria-pressed="${g.league}" aria-label="${esc(g.name)} ${g.league ? 'is' : 'is not'} in men’s league. Tap to change.">${g.league ? 'In league' : 'Not in league'}</button>
 	</li>`;
 }
 
 function renderRegulars() {
-	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Rounds</button>`;
+	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Tee Sheet</button>`;
 	const stats = golferStats();
 	const ranked = rankedRegulars();
 	const league = ranked.filter(g => g.league);
@@ -933,7 +921,7 @@ function renderRegulars() {
 		html += `<div class="notice"><span>${unsaved.length} ${unsaved.length === 1 ? 'person' : 'people'} from your rounds ${unsaved.length === 1 ? 'isn’t' : 'aren’t'} saved yet.</span><button data-action="import-regulars">Add ${unsaved.length === 1 ? 'them' : 'all'}</button></div>`;
 	}
 	if (!regulars.length) {
-		html += '<div class="empty"><strong>No golfers yet</strong><span>Add the people you play with, or paste a list from your notes. Mark who’s in men’s league.</span></div>';
+		html += '<div class="empty"><strong>No golfers yet</strong><span>Add the people you play with, and mark who’s in men’s league.</span></div>';
 	}
 	if (league.length) {
 		html += `<div class="section-label">Men’s league · ${league.length}</div><section class="list-card"><ul class="slots">${league.map(g => regularRow(g, stats)).join('')}</ul></section>`;
@@ -942,7 +930,7 @@ function renderRegulars() {
 		html += `<div class="section-label">Others · ${others.length}</div><section class="list-card"><ul class="slots">${others.map(g => regularRow(g, stats)).join('')}</ul></section>`;
 	}
 	$('main').innerHTML = html;
-	$('barInner').innerHTML = '<button class="secondary" data-action="import-list">Import list</button><button class="primary" data-action="add-regular">Add golfer</button>';
+	$('barInner').innerHTML = '<button class="primary" data-action="add-regular">Add golfer</button>';
 	$('bar').hidden = false;
 }
 
@@ -977,7 +965,6 @@ function sheetHtml() {
 	if (sheet.kind === 'edit-player') return editPlayerSheet();
 	if (sheet.kind === 'message') return messageSheet();
 	if (sheet.kind === 'regular') return regularSheet();
-	if (sheet.kind === 'import') return importSheet();
 	return '';
 }
 
@@ -1040,7 +1027,7 @@ function invitePlayersSheet() {
 				<label class="check" id="leagueCheck"><input type="checkbox" id="f-league">In men’s league</label>
 			</div>
 		</div>
-		<p class="hint">Invited golfers wait under “Waiting to hear back” and get a tee time when you mark them In.</p>
+		<p class="hint">Invited golfers wait under “Waiting to hear back.” Drag one onto a tee time to confirm them.</p>
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions sticky"><button class="primary" type="submit" id="inviteBtn">${inviteLabel()}</button></div>
 	</form>`;
@@ -1065,57 +1052,6 @@ function submitInvitePlayers() {
 	}));
 	closeSheet();
 	toast(invitees.length === 1 ? `Invited ${invitees[0].name}` : `Invited ${invitees.length} players`);
-}
-
-function parseNameList(text) {
-	const seen = new Set();
-	return text.split(/[\n,;]+/)
-		.map(line => line.replace(/^\s*(?:(?:[-*•◦▪‣·–—]|\d+[.)]|\[[ xX]?\]|[☐☑✓✔✅])\s*)+/u, '').replace(/\s+/g, ' ').trim())
-		.filter(name => {
-			const key = name.toLowerCase();
-			if (!/\p{L}/u.test(name) || seen.has(key)) return false;
-			seen.add(key);
-			return true;
-		});
-}
-function importNames() {
-	const names = parseNameList($('f-import')?.value ?? '');
-	const fresh = names.filter(n => !regulars.some(g => sameName(g.name, n)));
-	return {fresh, skipped: names.length - fresh.length};
-}
-function importPreviewHtml() {
-	const {fresh, skipped} = importNames();
-	if (!fresh.length && !skipped) return '';
-	const allLeague = fresh.length && fresh.every(n => sheet.league.has(n.toLowerCase()));
-	const rows = fresh.map(n => {
-		const on = sheet.league.has(n.toLowerCase());
-		return `<li class="player"><span class="p-main"><span class="p-name">${esc(n)}</span></span>
-			<button type="button" class="pill league-toggle${on ? ' on' : ''}" data-action="import-league" data-key="${esc(n.toLowerCase())}" aria-pressed="${on}" aria-label="${esc(n)} ${on ? 'is' : 'is not'} in men’s league. Tap to change.">${on ? 'In league' : 'Not in league'}</button></li>`;
-	}).join('');
-	return `<div class="section-label"><span>${fresh.length} new</span>${fresh.length ? `<button type="button" data-action="import-all-league">${allLeague ? 'Unmark all' : 'Mark all league'}</button>` : ''}</div>
-		${fresh.length ? `<section class="list-card"><ul class="slots">${rows}</ul></section>` : ''}
-		${skipped ? `<p class="hint">${skipped} already saved, so ${skipped === 1 ? 'it’ll' : 'they’ll'} be skipped.</p>` : ''}`;
-}
-function updateImport() {
-	const {fresh} = importNames();
-	$('importPreview').innerHTML = importPreviewHtml();
-	$('importBtn').textContent = fresh.length ? `Import ${fresh.length} golfer${fresh.length === 1 ? '' : 's'}` : 'Import';
-	$('importBtn').disabled = !fresh.length;
-}
-function importSheet() {
-	return sheetHead('Import golfers') + `<form class="form" id="importForm" novalidate>
-		<p class="hint">Copy a list of names from Notes and paste it here, one name per line. Bullets, numbers and checkboxes are removed.</p>
-		<textarea class="input" id="f-import" placeholder="Dave Smith&#10;Chris&#10;Sam" aria-label="Names to import" data-autofocus></textarea>
-		<div id="importPreview"></div>
-		<div class="sheet-actions sticky"><button class="primary" type="submit" id="importBtn" disabled>Import</button></div>
-	</form>`;
-}
-function submitImport() {
-	const {fresh} = importNames();
-	if (!fresh.length) return;
-	fresh.forEach(name => saveDoc('regulars', {id: uid(), name, league: sheet.league.has(name.toLowerCase())}));
-	closeSheet();
-	toast(`Imported ${fresh.length} golfer${fresh.length === 1 ? '' : 's'}`);
 }
 
 function regularSheet() {
@@ -1266,7 +1202,7 @@ function submitEditPlayer() {
 	editRound(r.id, x => {
 		const p = x.players.find(y => y.id === sheet.pid);
 		Object.assign(p, {name, note});
-		if (status !== p.status) setStatus(x, p, status);
+		if (status !== p.status) setStatus(p, status);
 	});
 	closeSheet();
 }
@@ -1367,18 +1303,6 @@ document.addEventListener('click', ev => {
 		btn.classList.toggle('on', sheet.selected.has(id));
 		btn.setAttribute('aria-pressed', sheet.selected.has(id));
 		$('inviteBtn').textContent = inviteLabel();
-	} else if (action === 'import-list') {
-		openSheet('import', {league: new Set()});
-	} else if (action === 'import-league') {
-		const key = btn.dataset.key;
-		if (sheet.league.has(key)) sheet.league.delete(key);
-		else sheet.league.add(key);
-		updateImport();
-	} else if (action === 'import-all-league') {
-		const keys = importNames().fresh.map(n => n.toLowerCase());
-		const allOn = keys.every(k => sheet.league.has(k));
-		keys.forEach(k => (allOn ? sheet.league.delete(k) : sheet.league.add(k)));
-		updateImport();
 	} else if (action === 'edit-player' && r) {
 		openSheet('edit-player', {roundId: r.id, pid: btn.dataset.pid});
 	} else if (action === 'remove-player') {
@@ -1400,7 +1324,7 @@ document.addEventListener('click', ev => {
 		const pid = btn.dataset.pid;
 		editRound(r.id, x => {
 			const p = x.players.find(y => y.id === pid);
-			setStatus(x, p, NEXT_STATUS[p.status]);
+			setStatus(p, NEXT_STATUS[p.status]);
 		});
 		toast(statusToast(findRound(r.id), pid));
 	} else if (action === 'message' && r) {
@@ -1425,10 +1349,6 @@ document.addEventListener('click', ev => {
 		openSheet('regular', {gid: null, league: false});
 	} else if (action === 'edit-regular') {
 		openSheet('regular', {gid: btn.dataset.gid});
-	} else if (action === 'toggle-league') {
-		const g = regulars.find(x => x.id === btn.dataset.gid);
-		saveDoc('regulars', {...g, league: !g.league});
-		toast(`${g.name}: ${g.league ? 'not in' : 'in'} men’s league`);
 	} else if (action === 'import-regulars') {
 		const names = unsavedNames();
 		names.forEach(name => saveDoc('regulars', {id: uid(), name, league: false}));
@@ -1456,7 +1376,6 @@ document.addEventListener('submit', ev => {
 	const form = ev.target;
 	if (form.id === 'roundForm') submitRound();
 	else if (form.id === 'invitePlayersForm') submitInvitePlayers();
-	else if (form.id === 'importForm') submitImport();
 	else if (form.id === 'editPlayerForm') submitEditPlayer();
 	else if (form.id === 'signInForm') submitSignIn();
 	else if (form.id === 'regularForm') submitRegular(ev.submitter?.name === 'again');
@@ -1469,8 +1388,6 @@ document.addEventListener('input', ev => {
 		$('pickList')?.querySelectorAll('[data-search]').forEach(row => { row.closest('li').hidden = !row.dataset.search.includes(q); });
 	} else if (id === 'f-name' && $('inviteBtn')) {
 		$('inviteBtn').textContent = inviteLabel();
-	} else if (id === 'f-import') {
-		updateImport();
 	}
 });
 
@@ -1574,7 +1491,6 @@ async function onSession(session) {
 	const id = session?.user?.id ?? null;
 	if (id === userId && storeMode !== 'loading') return;
 	userId = id;
-	userEmail = session?.user?.email ?? '';
 	if (channel) {
 		sb.removeChannel(channel);
 		channel = null;

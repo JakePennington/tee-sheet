@@ -4,7 +4,7 @@ Context for any AI assistant (or person) making changes to Tee Sheet. Setup step
 
 ## What it is
 
-A phone-first app for scheduling golf rounds: upcoming rounds, multiple tee times per round, each player's status (in / pending / out), a saved list of golfers (ranked by how often they accept, and marked by whether they're in men's league with the owner), inviting several golfers to a round at once, importing golfers from a pasted list, dragging golfers between tee times, and a one-line invite text to copy and send to one person at a time.
+A phone-first app for scheduling golf rounds: upcoming rounds, multiple tee times per round, each player's status (in / pending / out), a saved list of golfers (ranked by how often they accept, and marked by whether they're in men's league with the owner), inviting several golfers to a round at once, dragging golfers between tee times, and a one-line invite text to copy and send to one person at a time.
 
 - Live site: https://jakepennington.github.io/tee-sheet/
 - Repo: https://github.com/JakePennington/tee-sheet (public, personal account)
@@ -56,7 +56,7 @@ Round `data` shape:
 
 - `tentative: true` means the tee times aren't booked yet (gauging interest). `bookOn` is an optional date when the tee times open for booking (cleared when booked). Shown as a Tentative / "Book Oct 10" / "Book now" tag on the home screen and a booking card with a "Mark booked" button on the round, and the invite text asks "you interested?" instead of "you in?". Missing means booked.
 - `date` is a local calendar date (`YYYY-MM-DD`); `time` is 24-hour `HH:MM`.
-- `status` is `in`, `pending` or `out`. **Only In players are in tee times.** Pending players show under "Waiting to hear back" and Out under "Can't make it". Status changes go through `setStatus()`: becoming In assigns their previous tee time if it has room, otherwise `firstOpenTee()`; becoming Pending or Out clears `teeTimeId`. Older rounds may have pending players with a `teeTimeId`; it's ignored for display and capacity.
+- `status` is `in`, `pending` or `out`. **Only In players are in tee times.** Pending players show under "Waiting to hear back" and Out under "Can't make it". Status changes (the status pill or the player panel) go through `setStatus()`, which never assigns a tee time: it clears `teeTimeId`, so a newly-In golfer lands in "No tee time yet" until dragged. Older rounds may have pending players with a `teeTimeId`; it's ignored for display and capacity.
 - Each tee time holds `spots` In players (1–4, the number booked; defaults to `MAX_SPOTS` = 4 when missing), set per tee time in the round form; open spots count only In players. Overbooking is allowed and shown as a warning.
 - `teeTimeId: ""` means no tee time yet. After a golfer is In, their tee time changes only by dragging on the round page.
 - Older rounds may have a `guestOf` field from a removed guest feature; it's ignored.
@@ -90,7 +90,6 @@ Regular (golfer) `data` shape:
 - **Rendering:** plain functions build HTML strings (`renderList`, `renderRound`, `sheetHtml`). All user text goes through `esc()`. Clicks are handled by one delegated listener keyed on `data-action` attributes.
 - **Ranking** (`golferStats`, `rankedRegulars`): golfers are ordered by how many rounds they were **In** for (accepted), then by their most recent such round, then by name. The owner gives preference to golfers who play often and recently.
 - **Invite players** (`invitePlayersSheet`) lists golfers not already on the round as a ranked multi-select checklist. "Someone not in your golfers?" reveals a name field with Save to golfers / men's league options (shown up front only when no golfers are left). Invitees start as `pending` with no tee time.
-- **Import list** (`importSheet`, `parseNameList`) splits pasted text on newlines, commas and semicolons, strips bullets, numbering and checkboxes, dedupes, skips existing golfers, and previews with per-name league toggles.
 - **Drag and drop** on a round: every golfer has a grip. Dragging a Pending or Out golfer onto a tee time marks them **In** there (if dropped on a golfer, that golfer keeps In status but loses their tee time); the "No tee time yet" drop zone appears only when dragging an In golfer. Dragging it uses pointer events (`touch-action: none` on the grip only, so the page still scrolls normally). For In golfers, drop on a golfer in another group to swap tee times, or on a group with room (or the "No tee time yet" zone) to move them. `render()` is skipped while a drag is in progress.
 - **Updates:** `sw.js` serves page loads network-first. `reloadIfUpdated()` also fetches the page on open and whenever the app returns to the foreground, and reloads if the HTML changed since launch.
 - **Sign out** lives only on the Golfers screen footer.
