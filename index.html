@@ -499,11 +499,6 @@ function statusToast(r, pid) {
 function nameOf(r, pid) {
 	return r.players.find(p => p.id === pid)?.name ?? '';
 }
-function knownNames() {
-	const freq = new Map();
-	rounds.forEach(r => r.players.forEach(p => freq.set(p.name, (freq.get(p.name) || 0) + 1)));
-	return [...freq.entries()].sort((a, b) => b[1] - a[1]).map(([n]) => n);
-}
 function knownCourses() {
 	return [...new Set(rounds.map(r => r.course))].sort();
 }
@@ -514,6 +509,7 @@ function normalizeRegular(g) {
 		name: g.name || 'Unnamed',
 		league: !!g.league,
 		note: g.note || '',
+		archived: !!g.archived,
 		createdAt: g.createdAt || '',
 		updatedAt: g.updatedAt || '',
 	};
@@ -545,12 +541,12 @@ function golferStats() {
 	}));
 	return g => stats.get(g.id) || {played: 0, last: ''};
 }
+function activeRegulars() {
+	return regulars.filter(g => !g.archived);
+}
 function rankedRegulars() {
 	const stats = golferStats();
-	return [...regulars].sort((a, b) => stats(b).played - stats(a).played || stats(b).last.localeCompare(stats(a).last) || a.name.localeCompare(b.name));
-}
-function unsavedNames() {
-	return knownNames().filter(n => !sameName(n, OWNER_NAME) && !sameName(n, 'Me') && !regulars.some(g => sameName(g.name, n)));
+	return activeRegulars().sort((a, b) => stats(b).played - stats(a).played || stats(b).last.localeCompare(stats(a).last) || a.name.localeCompare(b.name));
 }
 
 /* Storage: Supabase when configured and signed in, this browser otherwise */
@@ -940,12 +936,8 @@ function renderRegulars() {
 	const ranked = rankedRegulars();
 	const league = ranked.filter(g => g.league);
 	const others = ranked.filter(g => !g.league);
-	const unsaved = unsavedNames();
 	let html = '<div class="page-head"><h1 class="course">Golfers</h1></div>';
-	if (unsaved.length) {
-		html += `<div class="notice"><span>${unsaved.length} ${unsaved.length === 1 ? 'person' : 'people'} from your rounds ${unsaved.length === 1 ? 'isn’t' : 'aren’t'} saved yet.</span><button data-action="import-regulars">Add ${unsaved.length === 1 ? 'them' : 'all'}</button></div>`;
-	}
-	if (!regulars.length) {
+	if (!ranked.length) {
 		html += '<div class="empty"><strong>No golfers yet</strong></div>';
 	}
 	if (league.length) {
@@ -1057,9 +1049,8 @@ function invitePlayersSheet() {
 	if (available.length) list = `<section class="list-card picker"><ul class="slots" id="pickList">${pickRows(r)}</ul></section>`;
 	else if (regulars.length) list = '<p class="hint">All your golfers are already on this round.</p>';
 	return sheetHead('Invite players') + `<form class="form" id="invitePlayersForm" novalidate>
-		<datalist id="nameList">${unsavedNames().filter(n => !r.players.some(p => sameName(p.name, n))).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>
 		<button type="button" class="dashed-btn" id="showNewBtn" data-action="show-new-person"${showNew ? ' hidden' : ''}>+ New golfer</button>
-		<div class="field" id="newPerson"${showNew ? '' : ' hidden'}><label for="f-name">New golfer</label><input class="input" id="f-name" list="nameList" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
+		<div class="field" id="newPerson"${showNew ? '' : ' hidden'}><label for="f-name">New golfer</label><input class="input" id="f-name" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
 		<p class="err" id="formErr" hidden></p>
 		${available.length > 8 ? '<input class="input" type="search" id="f-search" placeholder="Search golfers" autocomplete="off" aria-label="Search golfers">' : ''}
 		${list}
@@ -1074,8 +1065,8 @@ function submitInvitePlayers() {
 	if (name) {
 		if (r.players.some(p => sameName(p.name, name))) return showErr(`${name} is already on this round.`);
 		let g = regulars.find(x => sameName(x.name, name));
-		if (!g) {
-			g = {id: uid(), name, league: false};
+		if (!g || g.archived) {
+			g = g ? {...g, archived: false} : {id: uid(), name, league: false};
 			saveDoc('regulars', g);
 		}
 		if (!picked.some(x => x.id === g.id)) invitees.push({name: g.name, regularId: g.id});
@@ -1105,11 +1096,11 @@ function regularSheet() {
 function submitRegular(again) {
 	const name = $('f-name').value.trim();
 	if (!name) return showErr('Add a name.');
-	if (regulars.some(x => x.id !== sheet.gid && sameName(x.name, name))) return showErr(`${name} is already in your golfers.`);
+	if (activeRegulars().some(x => x.id !== sheet.gid && sameName(x.name, name))) return showErr(`${name} is already in your golfers.`);
 	const league = $('f-league').checked;
 	const note = $('f-gnote').value.trim();
-	const g = sheet.gid ? regulars.find(x => x.id === sheet.gid) : null;
-	saveDoc('regulars', g ? {...g, name, league, note} : {id: uid(), name, league, note});
+	const g = sheet.gid ? regulars.find(x => x.id === sheet.gid) : regulars.find(x => x.archived && sameName(x.name, name));
+	saveDoc('regulars', g ? {...g, name, league, note, archived: false} : {id: uid(), name, league, note});
 	if (again) {
 		sheet.league = league;
 		rerenderSheet();
@@ -1462,10 +1453,6 @@ document.addEventListener('click', ev => {
 		openSheet('regular', {gid: null, league: false});
 	} else if (action === 'edit-regular') {
 		openSheet('regular', {gid: btn.dataset.gid});
-	} else if (action === 'import-regulars') {
-		const names = unsavedNames();
-		names.forEach(name => saveDoc('regulars', {id: uid(), name, league: false}));
-		toast(`Added ${names.length} golfer${names.length === 1 ? '' : 's'}`);
 	} else if (action === 'delete-regular') {
 		const g = regulars.find(x => x.id === sheet.gid);
 		if (!sheet.armed) {
@@ -1475,7 +1462,7 @@ document.addEventListener('click', ev => {
 			return;
 		}
 		closeSheet();
-		deleteDoc('regulars', g.id);
+		saveDoc('regulars', {...g, archived: true});
 		toast(`Removed ${g.name} from golfers`);
 	} else if (action === 'sign-out') {
 		sb.auth.signOut();
