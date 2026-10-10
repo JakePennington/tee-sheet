@@ -61,3 +61,40 @@ create policy "Delete own regulars" on public.regulars
 	using (user_id = (select auth.uid()));
 
 alter publication supabase_realtime add table public.regulars;
+
+-- Shared round links: returns the public view of one round for its share token, so golfers
+-- who aren't signed in can see it. Only what's safe to show; nothing else is readable anonymously.
+create or replace function public.shared_round(token text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+	select jsonb_build_object(
+		'course', r.data->>'course',
+		'date', r.data->>'date',
+		'holes', coalesce((r.data->>'holes')::int, 18),
+		'notes', coalesce(r.data->>'notes', ''),
+		'tentative', coalesce((r.data->>'tentative')::boolean, false),
+		'bookOn', coalesce(r.data->>'bookOn', ''),
+		'teeTimes', coalesce(r.data->'teeTimes', '[]'::jsonb),
+		'players', coalesce((
+			select jsonb_agg(jsonb_build_object(
+				'id', p->>'id',
+				'name', coalesce(g.data->>'name', p->>'name'),
+				'status', p->>'status',
+				'teeTimeId', coalesce(p->>'teeTimeId', '')
+			))
+			from jsonb_array_elements(coalesce(r.data->'players', '[]'::jsonb)) p
+			left join public.regulars g on g.id = p->>'regularId' and g.user_id = r.user_id
+			where p->>'status' in ('in', 'pending')
+		), '[]'::jsonb)
+	)
+	from public.rounds r
+	where length(token) >= 20 and r.data->>'shareToken' = token
+	limit 1;
+$$;
+
+revoke all on function public.shared_round(text) from public;
+grant execute on function public.shared_round(text) to anon, authenticated;

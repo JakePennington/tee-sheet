@@ -1,6 +1,6 @@
 # Tee Sheet
 
-A phone-first app for planning golf rounds: tee times (9 or 18 holes), who's in, who you're waiting to hear back from, and who can't make it, plus a ranked list of the golfers you play with. Data syncs between devices through Supabase; the site is static, so it hosts free on GitHub Pages. See `AGENTS.md` for how the app works.
+A phone-first app for planning golf rounds: tee times (9 or 18 holes), who's in, who you're waiting to hear back from, and who can't make it, plus a ranked list of the golfers you play with and read-only links to share a round with golfers who aren't signed in. Data syncs between devices through Supabase; the site is static, so it hosts free on GitHub Pages. See `AGENTS.md` for how the app works.
 
 ## Files
 
@@ -9,7 +9,7 @@ A phone-first app for planning golf rounds: tee times (9 or 18 holes), who's in,
 | `index.html` | The whole app |
 | `config.js` | Your Supabase URL, publishable key, and your name as it appears on rounds |
 | `sw.js` | Service worker: loads new versions quickly and lets the app open offline |
-| `supabase-setup.sql` | Creates the `rounds` and `regulars` (golfers) tables and locks them to your account |
+| `supabase-setup.sql` | Creates the `rounds` and `regulars` (golfers) tables, locks them to your account, and adds the `shared_round` function for share links |
 | `.github/workflows/keep-supabase-awake.yml` | Pings Supabase twice a week so the free project doesn't pause |
 | `manifest.webmanifest`, `icons/` | Home-screen name and icon |
 | `AGENTS.md` | How the app works, for whoever (or whichever AI) changes it next |

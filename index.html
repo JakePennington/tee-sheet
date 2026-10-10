@@ -154,7 +154,15 @@ p { margin: 0; }
 .round-title { min-width: 0; }
 .edit-btn { flex: none; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; margin-top: 2px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--ink-2); font-weight: 600; font-size: 14px; }
 .edit-btn:hover { color: var(--accent); border-color: var(--accent); }
-.course { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: .01em; overflow-wrap: anywhere; }
+.head-actions { flex: none; display: flex; gap: 6px; }
+.edit-btn.icon-only { width: 36px; padding: 0; justify-content: center; }
+.edit-btn.is-on { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.pub-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.pub-actions .secondary { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; font-size: 15px; box-shadow: none; }
+.pub-row { padding: 14px; font-weight: 600; }
+.pub-open { font-weight: 400; color: var(--ink-2); }
+.course { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: .01em; overflow-wrap: break-word; }
+@media (max-width: 359px) { .course { font-size: 28px; } }
 .when { color: var(--ink-2); margin-top: 4px; }
 .notes { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
@@ -196,10 +204,6 @@ textarea.input.note-box { min-height: 64px; }
 .pill.out { background: var(--out-bg); color: var(--out); }
 .league { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; vertical-align: 2px; }
 .page-head { margin-bottom: 16px; }
-.move-row { width: 100%; display: grid; gap: 1px; min-height: 52px; padding: 8px 14px; border: 0; background: none; text-align: left; }
-.move-row[disabled] { opacity: .45; }
-.player .p-main { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.pull { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%; z-index: 30; padding: 6px 14px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow); color: var(--ink-2); font-size: 14px; font-weight: 600; transform: translate(-50%, -60px); transition: transform .15s; }
 .restore-btn { flex: none; min-height: 36px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 999px; background: none; color: var(--accent); font-weight: 600; }
 .picker { margin-top: 0; }
 .pick-row { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 14px; border: 0; background: none; text-align: left; }
@@ -208,6 +212,9 @@ textarea.input.note-box { min-height: 64px; }
 .pick-row.on .tick { background: var(--accent); border-color: var(--accent); }
 .pick-row.on .tick::after { content: ''; width: 6px; height: 11px; border: solid var(--accent-ink); border-width: 0 2.5px 2.5px 0; transform: translateY(-1px) rotate(45deg); }
 .pick-text { min-width: 0; display: grid; gap: 1px; }
+.new-row { display: flex; gap: 8px; }
+.new-row .input { flex: 1; min-width: 0; }
+.new-row .secondary { flex: none; box-shadow: none; }
 .picked { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
 .picked::-webkit-scrollbar { display: none; }
 .pick-chip { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 10px 0 12px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 14px; }
@@ -218,6 +225,7 @@ textarea.input.note-box { min-height: 64px; }
 .grip { flex: none; align-self: stretch; width: 30px; margin-right: -6px; display: grid; place-items: center; color: var(--ink-2); opacity: .55; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .grip:hover { opacity: 1; }
 .player.is-dragging { opacity: .3; }
+.player[data-pid] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .drag-ghost { position: fixed; z-index: 70; margin: 0; list-style: none; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 28px rgba(0, 0, 0, .22); transform: scale(1.02); opacity: .9; }
 .drag-ghost .grip { opacity: 1; cursor: grabbing; }
 body.is-dragging { -webkit-user-select: none; user-select: none; cursor: grabbing; }
@@ -299,7 +307,7 @@ body.is-dragging .drop-only { display: block; }
 .picker-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: grid; color: var(--accent); pointer-events: none; }
 .input::-webkit-calendar-picker-indicator { position: absolute; right: 0; top: 0; width: 46px; height: 100%; opacity: 0; cursor: pointer; }
 textarea.input { min-height: 80px; resize: vertical; }
-.input[type="date"] {
+.input[type="date"], .input[type="time"] {
 	-webkit-appearance: none;
 	appearance: none;
 	display: block;
@@ -335,12 +343,12 @@ textarea.input { min-height: 80px; resize: vertical; }
 .booking-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--in); color: var(--surface); font-weight: 600; font-size: 15px; }
 .times { display: grid; gap: 8px; }
 .time-row { display: flex; gap: 8px; }
-.time-field { flex: 1; min-width: 0; display: grid; gap: 8px; }
-.time-field .input { font-variant-numeric: tabular-nums; }
+.time-row .picker-wrap { flex: 1; }
+.time-row .input { font-variant-numeric: tabular-nums; }
 .time-row select.spots-select { flex: none; width: 116px; padding-inline: 10px 6px; }
 @media (max-width: 359px) {
 	.time-row { flex-wrap: wrap; }
-	.time-row .time-field { flex-basis: 100%; }
+	.time-row .picker-wrap { flex-basis: 100%; }
 	.time-row select.spots-select { flex: 1; width: auto; }
 }
 .remove-time { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--line-strong); border-radius: 10px; background: var(--field); color: var(--out); }
@@ -382,7 +390,6 @@ textarea.input { min-height: 80px; resize: vertical; }
 	<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
-<div class="pull" id="pull" aria-hidden="true"></div>
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
@@ -471,6 +478,7 @@ function normalize(r) {
 		notes: r.notes || '',
 		tentative: !!r.tentative,
 		bookOn: r.tentative ? r.bookOn || '' : '',
+		shareToken: r.shareToken || '',
 		teeTimes: (Array.isArray(r.teeTimes) ? r.teeTimes : [])
 			.map(t => ({id: t.id, time: t.time, spots: Math.min(MAX_SPOTS, Math.max(1, Number(t.spots) || MAX_SPOTS))}))
 			.sort((a, b) => a.time.localeCompare(b.time)),
@@ -753,14 +761,17 @@ function editRound(id, mutate) {
 
 /* Rendering */
 const icoCalendar = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
+const icoClock = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 const icoRemove = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const icoCheck = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const icoPencil = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
 const icoMessage = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5c0 4.1-3.6 7.5-8 7.5-1.2 0-2.3-.2-3.3-.6L4 19.5l1.2-3.6C4.4 14.6 4 13.1 4 11.5 4 7.4 7.6 4 12 4s8 3.4 8 7.5z"/></svg>';
+const icoShare = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+const icoPin = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
 const icoBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function render() {
-	if (drag) return;
+	if (drag || storeMode === 'public') return;
 	if (storeMode === 'auth') {
 		renderSignIn();
 		return;
@@ -941,7 +952,10 @@ function renderRound(r) {
 				<h1 class="course">${esc(r.course)}</h1>
 				<p class="when">${esc(fmtDate(r.date, {weekday: 'long', month: 'long', day: 'numeric'}))} · ${r.holes} holes · ${esc(relDay(r.date))}</p>
 			</div>
-			<button class="edit-btn" data-action="edit-round" aria-label="Edit round">${icoPencil}Edit</button>
+			<div class="head-actions">
+				<button class="edit-btn icon-only${r.shareToken ? ' is-on' : ''}" data-action="share-round" aria-label="${r.shareToken ? 'Shared. Manage link' : 'Share round'}">${icoShare}</button>
+				<button class="edit-btn" data-action="edit-round" aria-label="Edit round">${icoPencil}Edit</button>
+			</div>
 		</div>
 		${r.tentative ? bookingCard(r) : ''}
 		${r.notes ? `<p class="notes">${esc(r.notes)}</p>` : ''}
@@ -1094,7 +1108,7 @@ function sheetHtml() {
 	if (sheet.kind === 'edit-player') return editPlayerSheet();
 	if (sheet.kind === 'send-invites') return sendInvitesSheet();
 	if (sheet.kind === 'tee') return teeSheet();
-	if (sheet.kind === 'move') return moveSheet();
+	if (sheet.kind === 'share') return shareSheet();
 	if (sheet.kind === 'regular') return regularSheet();
 	return '';
 }
@@ -1118,7 +1132,7 @@ function roundSheet() {
 			<div class="picker-wrap"><input class="input" type="date" id="f-bookon" value="${esc(r?.bookOn ?? '')}"><span class="picker-icon">${icoCalendar}</span></div>
 		</div>
 		${r ? '' : `<div class="field"><span class="lbl">Tee times</span><div class="times">
-			${times.map((t, i) => `<div class="time-row">${timeField(`f-time-${t.id}`, t.time, `Tee time ${i + 1}`)}<select class="input spots-select" data-spots-id="${esc(t.id)}" aria-label="Golfers booked for tee time ${i + 1}">${spotOptions(t.spots)}</select><button class="remove-time" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">${icoRemove}</button></div>`).join('')}
+			${times.map((t, i) => `<div class="time-row"><div class="picker-wrap"><input class="input" type="time" id="f-time-${esc(t.id)}" data-time-id="${esc(t.id)}" value="${esc(t.time)}" step="60" aria-label="Tee time ${i + 1}"><span class="picker-icon">${icoClock}</span></div><select class="input spots-select" data-spots-id="${esc(t.id)}" aria-label="Golfers booked for tee time ${i + 1}">${spotOptions(t.spots)}</select><button class="remove-time" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">${icoRemove}</button></div>`).join('')}
 			<button class="add-time" type="button" data-action="add-time">+ Add tee time</button>
 		</div></div>`}
 		<div class="field"><label for="f-notes">Notes</label><textarea class="input" id="f-notes" name="notes" placeholder="Carts, green fees, who’s driving…">${esc(r?.notes ?? '')}</textarea></div>
@@ -1145,19 +1159,43 @@ function pickRows(r, candidates, stats) {
 		</button></li>`;
 	}).join('');
 }
-function typedNewName() {
-	const name = $('f-name')?.value.trim() ?? '';
-	if (!name) return '';
-	return regulars.some(g => sheet.selected.has(g.id) && sameName(g.name, name)) ? '' : name;
+function addNewName() {
+	const input = $('f-name');
+	const name = input.value.trim().replace(/\s+/g, ' ');
+	if (!name) return true;
+	const r = findRound(sheet.roundId);
+	const existing = activeRegulars().find(g => sameName(g.name, name));
+	const onIt = r.players.find(p => (existing ? regularFor(p)?.id === existing.id : sameName(displayName(p), name)));
+	if (onIt && (sheet.addTo === undefined || onIt.status === 'in')) {
+		showErr(`${name} is already on this round.`);
+		return false;
+	}
+	$('formErr').hidden = true;
+	if (existing) {
+		sheet.selected.add(existing.id);
+		const row = $('pickList')?.querySelector(`.pick-row[data-gid="${CSS.escape(existing.id)}"]`);
+		row?.classList.add('on');
+		row?.setAttribute('aria-pressed', 'true');
+	} else if (!sheet.newNames.some(n => sameName(n, name))) {
+		sheet.newNames.push(name);
+	}
+	input.value = '';
+	input.focus();
+	sheet.dirty = true;
+	updateInvitePanel();
+	return true;
 }
 function updateInvitePanel() {
-	const count = sheet.selected.size + (typedNewName() ? 1 : 0);
+	const count = sheet.selected.size + sheet.newNames.length;
 	const verb = sheet.addTo !== undefined ? 'Add' : 'Invite';
 	$('inviteBtn').textContent = count ? `${verb} ${count}` : verb;
 	$('inviteBtn').disabled = !count;
-	const chips = regulars.filter(g => sheet.selected.has(g.id));
-	$('pickedStrip').hidden = !chips.length;
-	$('pickedStrip').innerHTML = chips.map(g => `<button type="button" class="pick-chip" data-action="toggle-pick" data-gid="${esc(g.id)}" aria-label="Remove ${esc(g.name)}">${esc(g.name)}<span aria-hidden="true">×</span></button>`).join('');
+	const chip = (attrs, name) => `<button type="button" class="pick-chip" ${attrs} aria-label="Remove ${esc(name)}">${esc(name)}<span aria-hidden="true">×</span></button>`;
+	$('pickedStrip').hidden = !count;
+	$('pickedStrip').innerHTML = [
+		...regulars.filter(g => sheet.selected.has(g.id)).map(g => chip(`data-action="toggle-pick" data-gid="${esc(g.id)}"`, g.name)),
+		...sheet.newNames.map(n => chip(`data-action="remove-new-name" data-name="${esc(n)}"`, n)),
+	].join('');
 }
 function invitePlayersSheet() {
 	const r = findRound(sheet.roundId);
@@ -1170,7 +1208,7 @@ function invitePlayersSheet() {
 	else if (regulars.length) list = '<p class="hint">All your golfers are already on this round.</p>';
 	return sheetHead(title) + `<form class="form" id="invitePlayersForm" novalidate>
 		<button type="button" class="dashed-btn" id="showNewBtn" data-action="show-new-person"${available.length ? '' : ' hidden'}>+ New golfer</button>
-		<div class="field" id="newPerson"${available.length ? ' hidden' : ''}><label for="f-name">New golfer</label><input class="input" id="f-name" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
+		<div class="field" id="newPerson"${available.length ? ' hidden' : ''}><label for="f-name">New golfer</label><div class="new-row"><input class="input" id="f-name" autocomplete="off" autocapitalize="words" enterkeyhint="enter" placeholder="Name"><button type="button" class="secondary" data-action="add-new-name">Add</button></div></div>
 		<p class="err" id="formErr" hidden></p>
 		${available.length > 8 ? '<input class="input" type="search" id="f-search" placeholder="Search golfers" autocomplete="off" aria-label="Search golfers">' : ''}
 		${list}
@@ -1180,18 +1218,16 @@ function invitePlayersSheet() {
 function submitInvitePlayers() {
 	const r = findRound(sheet.roundId);
 	const adding = sheet.addTo !== undefined;
+	if (!addNewName()) return;
 	const picked = activeRegulars().filter(g => sheet.selected.has(g.id));
-	const name = typedNewName();
-	if (name) {
+	sheet.newNames.forEach(name => {
 		let g = regulars.find(x => sameName(x.name, name));
-		const onIt = r.players.find(p => (g ? regularFor(p)?.id === g.id : sameName(displayName(p), name)));
-		if (onIt && (!adding || onIt.status === 'in')) return showErr(`${name} is already on this round.`);
 		if (!g || g.archived) {
 			g = g ? {...g, archived: false} : {id: uid(), name, league: false};
 			saveDoc('regulars', g);
 		}
-		picked.push(g);
-	}
+		if (!picked.some(x => x.id === g.id)) picked.push(g);
+	});
 	if (!picked.length) return;
 	if (adding) {
 		const tee = r.teeTimes.find(t => t.id === sheet.addTo);
@@ -1272,42 +1308,21 @@ function teeSheet() {
 	const t = findRound(sheet.roundId).teeTimes.find(x => x.id === sheet.teeId);
 	if (!t) return '';
 	return sheetHead(`${fmtTime(t.time)} tee time`) + `<form class="form" id="teeForm" novalidate>
-		<div class="field"><label for="f-tee-time">Time</label>${timeField('f-tee-time', t.time, 'Tee time')}</div>
+		<div class="field"><label for="f-tee-time">Time</label><div class="picker-wrap"><input class="input" type="time" id="f-tee-time" value="${esc(t.time)}" step="60"><span class="picker-icon">${icoClock}</span></div></div>
 		<div class="field"><label for="f-tee-spots">Golfers booked</label><select class="input" id="f-tee-spots">${spotOptions(t.spots)}</select></div>
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions"><button class="primary" type="submit">Save</button></div>
 	</form>`;
 }
 function submitTee() {
-	const time = readTime('f-tee-time');
-	if (!time) return showErr('Enter a time like 8:07 AM.');
+	const time = $('f-tee-time').value;
+	if (!time) return showErr('Pick a time.');
 	const spots = Number($('f-tee-spots').value);
 	editRound(sheet.roundId, x => {
 		Object.assign(x.teeTimes.find(t => t.id === sheet.teeId), {time, spots});
 	});
 	closeSheet();
 	toast(`Tee time updated: ${fmtTime(time)}, ${spots} golfer${spots === 1 ? '' : 's'}`);
-}
-function moveSheet() {
-	const r = findRound(sheet.roundId);
-	const p = r.players.find(x => x.id === sheet.pid);
-	if (!p) return '';
-	const currentTee = p.status === 'in' && r.teeTimes.some(t => t.id === p.teeTimeId) ? p.teeTimeId : '';
-	const row = (status, tee, label, sub, full) => {
-		const here = p.status === status && (status !== 'in' || currentTee === tee);
-		return `<li><button type="button" class="move-row" data-action="move-to" data-status="${status}" data-tee="${esc(tee)}"${here || full ? ' disabled' : ''}>
-			<span class="p-name">${label}</span>${here ? '<span class="p-sub">Here now</span>' : sub ? `<span class="p-sub">${sub}</span>` : ''}</button></li>`;
-	};
-	const rows = [
-		...r.teeTimes.map(t => {
-			const n = playersAt(r, t.id).length;
-			return row('in', t.id, fmtTime(t.time), `${n} of ${t.spots}`, n >= t.spots);
-		}),
-		row('in', '', r.teeTimes.length ? 'No tee time yet' : 'Playing', '', false),
-		row('pending', '', 'Waiting to hear back', '', false),
-		row('out', '', 'Can’t make it', '', false),
-	];
-	return sheetHead(`Move ${displayName(p)}`) + `<section class="list-card"><ul class="slots">${rows.join('')}</ul></section>`;
 }
 function sendRow(p) {
 	const sent = sheet.sent.has(p.id);
@@ -1338,37 +1353,13 @@ function showErr(msg) {
 	el.hidden = false;
 }
 
-const TIME_OPTIONS = Array.from({length: 91}, (_, i) => `${pad(Math.floor((300 + i * 10) / 60))}:${pad((300 + i * 10) % 60)}`);
-function timeField(id, value, label) {
-	const options = TIME_OPTIONS.includes(value) || !value ? TIME_OPTIONS : [...TIME_OPTIONS, value].sort();
-	return `<div class="time-field"><select class="input" id="${esc(id)}" data-time-select aria-label="${esc(label)}">
-		${options.map(t => `<option value="${t}"${t === value ? ' selected' : ''}>${fmtTime(t)}</option>`).join('')}
-		<option value="type">Type a time…</option>
-	</select><input class="input" id="${esc(id)}-typed" placeholder="e.g. 8:07 AM" autocomplete="off" aria-label="${esc(label)}" hidden></div>`;
-}
-function parseTime(text) {
-	const m = text.trim().toLowerCase().match(/^(\d{1,2})(?::?(\d{2}))?\s*([ap])?\.?m?\.?$/);
-	if (!m) return '';
-	let h = Number(m[1]);
-	const min = Number(m[2] ?? 0);
-	if (h > 23 || min > 59) return '';
-	if (m[3] === 'p' && h < 12) h += 12;
-	if (m[3] === 'a' && h === 12) h = 0;
-	if (!m[3] && h >= 1 && h <= 5) h += 12;
-	return `${pad(h)}:${pad(min)}`;
-}
-function readTime(id) {
-	return $(id).value === 'type' ? parseTime($(`${id}-typed`).value) : $(id).value;
-}
 function spotOptions(current) {
 	return [1, 2, 3, 4].map(n => `<option value="${n}"${current === n ? ' selected' : ''}>${n} golfer${n === 1 ? '' : 's'}</option>`).join('');
 }
 function readRoundTimes() {
-	sheet.times?.forEach(t => {
-		if (!$(`f-time-${t.id}`)) return;
-		const time = readTime(`f-time-${t.id}`);
-		t.invalid = !time;
-		if (time) t.time = time;
+	$('sheet').querySelectorAll('[data-time-id]').forEach(inp => {
+		const t = sheet.times.find(x => x.id === inp.dataset.timeId);
+		if (t) t.time = inp.value;
 	});
 	$('sheet').querySelectorAll('[data-spots-id]').forEach(sel => {
 		const t = sheet.times.find(x => x.id === sel.dataset.spotsId);
@@ -1402,7 +1393,6 @@ function submitRound() {
 	const date = $('f-date').value;
 	if (!course) return showErr('Add the course name.');
 	if (!date) return showErr('Pick a date.');
-	if (sheet.times?.some(t => t.invalid)) return showErr('Enter tee times like 8:07 AM.');
 	const notes = $('f-notes').value.trim();
 	const holes = $('h-9').checked ? 9 : 18;
 	const tentative = $('bk-tentative').checked;
@@ -1562,9 +1552,9 @@ document.addEventListener('click', ev => {
 		deleteDoc('rounds', id);
 		toast('Round deleted');
 	} else if (action === 'invite-players' && r) {
-		openSheet('invite-players', {roundId: r.id, selected: new Set()});
+		openSheet('invite-players', {roundId: r.id, selected: new Set(), newNames: []});
 	} else if (action === 'add-golfers' && r) {
-		openSheet('invite-players', {roundId: r.id, selected: new Set(), addTo: btn.dataset.tee});
+		openSheet('invite-players', {roundId: r.id, selected: new Set(), newNames: [], addTo: btn.dataset.tee});
 	} else if (action === 'mark-booked' && r) {
 		editRound(r.id, x => {
 			x.tentative = false;
@@ -1576,6 +1566,35 @@ document.addEventListener('click', ev => {
 		sheet.sent.add(btn.dataset.pid);
 		btn.innerHTML = `${icoCheck}Texted`;
 		btn.closest('li').classList.add('is-sent');
+	} else if (action === 'share-round' && r) {
+		if (!r.shareToken) editRound(r.id, x => { x.shareToken = newShareToken(); });
+		openSheet('share', {roundId: r.id});
+	} else if (action === 'copy-link') {
+		const box = $('f-share-link');
+		if (navigator.clipboard?.writeText) navigator.clipboard.writeText(box.value).then(() => toast('Link copied'), () => box.select());
+		else box.select();
+	} else if (action === 'text-link') {
+		const sr = findRound(sheet.roundId);
+		openMessages(`Tee times for ${sr.course} on ${fmtDate(sr.date, {weekday: 'short', month: 'short', day: 'numeric'})}: ${shareUrl(sr)}`);
+	} else if (action === 'stop-sharing') {
+		if (!sheet.armed) {
+			sheet.armed = true;
+			btn.classList.add('armed');
+			btn.textContent = 'Tap again to turn off this link';
+			return;
+		}
+		editRound(sheet.roundId, x => { x.shareToken = ''; });
+		closeSheet();
+		toast('Link turned off');
+	} else if (action === 'add-calendar' && publicRound) {
+		downloadCalendar(publicRound);
+	} else if (action === 'reload') {
+		location.reload();
+	} else if (action === 'add-new-name') {
+		addNewName();
+	} else if (action === 'remove-new-name') {
+		sheet.newNames = sheet.newNames.filter(n => n !== btn.dataset.name);
+		updateInvitePanel();
 	} else if (action === 'show-new-person') {
 		$('newPerson').hidden = false;
 		btn.hidden = true;
@@ -1595,10 +1614,6 @@ document.addEventListener('click', ev => {
 			$('pickList').querySelectorAll('li').forEach(li => { li.hidden = false; });
 			search.focus({preventScroll: true});
 		}
-	} else if (action === 'move-to' && r) {
-		const pid = sheet.pid;
-		closeSheet();
-		moveGolfer(r.id, pid, btn.dataset.status, btn.dataset.tee);
 	} else if (action === 'edit-player' && r) {
 		openSheet('edit-player', {roundId: r.id, pid: btn.dataset.pid});
 	} else if (action === 'remove-player') {
@@ -1675,8 +1690,6 @@ document.addEventListener('input', ev => {
 	} else if (id === 'f-search') {
 		const q = ev.target.value.trim().toLowerCase();
 		$('pickList')?.querySelectorAll('[data-search]').forEach(row => { row.closest('li').hidden = !row.dataset.search.includes(q); });
-	} else if (id === 'f-name' && $('inviteBtn')) {
-		updateInvitePanel();
 	} else if (id === 'f-message') {
 		sheet.text = ev.target.value;
 	}
@@ -1685,15 +1698,10 @@ document.addEventListener('input', ev => {
 
 document.addEventListener('change', ev => {
 	if (sheet && ev.target.closest('#sheet')) sheet.dirty = true;
-	if (ev.target.matches('[data-time-select]')) {
-		const typed = $(`${ev.target.id}-typed`);
-		typed.hidden = ev.target.value !== 'type';
-		if (!typed.hidden) typed.focus();
-	}
 	if (ev.target.name === 'booking' && $('bookOnField')) $('bookOnField').hidden = ev.target.value !== 'tentative';
 });
 
-/* Drag a golfer by its grip onto a section to set their status (tee times and No tee time yet = In, Waiting = Pending, Can't make it = Out), or onto a golfer in a tee time to swap */
+/* Drag a golfer (by the grip, or by holding the row) onto a section to set their status (tee times and No tee time yet = In, Waiting = Pending, Can't make it = Out), or onto a golfer in a tee time to swap */
 function dropTargetAt(x, y) {
 	const el = document.elementFromPoint(x, y);
 	const row = el?.closest('.player[data-status="in"]');
@@ -1730,6 +1738,8 @@ function endDrag(commit) {
 	target?.el.classList.remove('drop-target');
 	document.body.classList.remove('is-dragging');
 	drag = null;
+	suppressClick = true;
+	setTimeout(() => { suppressClick = false; }, 0);
 	const r = findRound(view.roundId);
 	if (!commit || !target || !r) {
 		render();
@@ -1767,11 +1777,7 @@ function moveGolfer(roundId, pid, status, teeId) {
 	else toast(r.teeTimes.length ? `${name}: In · no tee time yet` : `${name}: In`);
 }
 
-document.addEventListener('pointerdown', ev => {
-	const grip = ev.target.closest('[data-grip]');
-	if (!grip || drag) return;
-	ev.preventDefault();
-	const row = grip.closest('.player');
+function startDrag(row, x, y) {
 	const rect = row.getBoundingClientRect();
 	const ghost = row.cloneNode(true);
 	ghost.classList.add('drag-ghost');
@@ -1779,21 +1785,95 @@ document.addEventListener('pointerdown', ev => {
 	ghost.style.left = `${rect.left}px`;
 	ghost.style.top = `${rect.top}px`;
 	document.body.appendChild(ghost);
-	grip.setPointerCapture(ev.pointerId);
 	row.classList.add('is-dragging');
 	document.body.classList.add('is-dragging');
-	drag = {pid: row.dataset.pid, fromTee: row.dataset.tee, fromStatus: row.dataset.status, row, ghost, offsetY: ev.clientY - rect.top, x: ev.clientX, y: ev.clientY, target: null};
+	drag = {pid: row.dataset.pid, fromTee: row.dataset.tee, fromStatus: row.dataset.status, row, ghost, offsetY: y - rect.top, x, y, target: null, touch: false};
 	requestAnimationFrame(dragScroll);
+}
+function moveDrag(x, y) {
+	drag.x = x;
+	drag.y = y;
+	drag.ghost.style.top = `${y - drag.offsetY}px`;
+	updateDropTarget();
+}
+
+// The grip drags right away (it has touch-action: none). Anywhere else on a row: hold briefly on touch
+// (so a quick swipe still scrolls and a tap still opens the golfer), or just start moving with a mouse.
+let hold = null;
+let suppressClick = false;
+document.addEventListener('pointerdown', ev => {
+	if (drag || sheet) return;
+	const row = ev.target.closest('.player[data-pid]');
+	if (!row) return;
+	if (ev.target.closest('[data-grip]')) {
+		ev.preventDefault();
+		ev.target.closest('[data-grip]').setPointerCapture(ev.pointerId);
+		startDrag(row, ev.clientX, ev.clientY);
+	} else if (ev.pointerType === 'mouse' && !ev.target.closest('.pill')) {
+		hold = {row, x: ev.clientX, y: ev.clientY, mouse: true};
+	}
 });
 document.addEventListener('pointermove', ev => {
-	if (!drag) return;
-	drag.x = ev.clientX;
-	drag.y = ev.clientY;
-	drag.ghost.style.top = `${ev.clientY - drag.offsetY}px`;
-	updateDropTarget();
+	if (hold?.mouse && Math.hypot(ev.clientX - hold.x, ev.clientY - hold.y) > 6) {
+		startDrag(hold.row, hold.x, hold.y);
+		hold = null;
+	}
+	if (drag && !drag.touch) moveDrag(ev.clientX, ev.clientY);
 });
-document.addEventListener('pointerup', () => endDrag(true));
-document.addEventListener('pointercancel', () => endDrag(false));
+document.addEventListener('pointerup', () => {
+	if (hold?.mouse) hold = null;
+	if (drag && !drag.touch) endDrag(true);
+});
+document.addEventListener('pointercancel', () => {
+	if (drag && !drag.touch) endDrag(false);
+});
+document.addEventListener('touchstart', ev => {
+	if (drag || sheet || ev.touches.length !== 1) return;
+	const row = ev.target.closest('.player[data-pid]');
+	if (!row || ev.target.closest('[data-grip], .pill')) return;
+	const t = ev.touches[0];
+	hold = {row, x: t.clientX, y: t.clientY};
+	hold.timer = setTimeout(() => {
+		if (!hold) return;
+		navigator.vibrate?.(15);
+		startDrag(hold.row, hold.x, hold.y);
+		drag.touch = true;
+		hold = null;
+	}, 300);
+}, {passive: true});
+document.addEventListener('touchmove', ev => {
+	if (hold && !hold.mouse) {
+		const t = ev.touches[0];
+		if (Math.abs(t.clientX - hold.x) > 10 || Math.abs(t.clientY - hold.y) > 10) {
+			clearTimeout(hold.timer);
+			hold = null;
+		}
+		return;
+	}
+	if (!drag?.touch) return;
+	ev.preventDefault();
+	moveDrag(ev.touches[0].clientX, ev.touches[0].clientY);
+}, {passive: false});
+document.addEventListener('touchend', ev => {
+	if (hold && !hold.mouse) {
+		clearTimeout(hold.timer);
+		hold = null;
+	}
+	if (!drag?.touch) return;
+	ev.preventDefault();
+	endDrag(true);
+}, {passive: false});
+document.addEventListener('touchcancel', () => {
+	if (hold && !hold.mouse) clearTimeout(hold.timer);
+	hold = null;
+	if (drag?.touch) endDrag(false);
+});
+document.addEventListener('click', ev => {
+	if (!suppressClick) return;
+	suppressClick = false;
+	ev.stopPropagation();
+	ev.preventDefault();
+}, true);
 
 /* Swipe a sheet down to close it: from its header any time, or anywhere once it's scrolled to the top */
 let swipe = null;
@@ -1836,82 +1916,125 @@ $('sheet').addEventListener('touchcancel', () => {
 	setSwipe(0, true);
 });
 
-/* Long-press a golfer on a round to move them without dragging */
-let press = null;
-function openMoveSheet(pid) {
-	if (view.name === 'round') openSheet('move', {roundId: view.roundId, pid});
-}
-document.addEventListener('touchstart', ev => {
-	const main = ev.target.closest('.player[data-pid] .p-main');
-	if (!main || sheet) return;
-	const pid = main.dataset.pid;
-	press = {x: ev.touches[0].clientX, y: ev.touches[0].clientY, fired: false};
-	press.timer = setTimeout(() => {
-		press.fired = true;
-		navigator.vibrate?.(15);
-		openMoveSheet(pid);
-	}, 500);
-}, {passive: true});
-document.addEventListener('touchmove', ev => {
-	if (!press || press.fired) return;
-	const t = ev.touches[0];
-	if (Math.abs(t.clientX - press.x) > 10 || Math.abs(t.clientY - press.y) > 10) {
-		clearTimeout(press.timer);
-		press = null;
-	}
-}, {passive: true});
-document.addEventListener('touchend', ev => {
-	if (!press) return;
-	clearTimeout(press.timer);
-	if (press.fired) ev.preventDefault();
-	press = null;
-}, {passive: false});
-document.addEventListener('contextmenu', ev => {
-	const main = ev.target.closest('.player[data-pid] .p-main');
-	if (!main) return;
-	ev.preventDefault();
-	if (!sheet) openMoveSheet(main.dataset.pid);
-});
-
-/* Pull down at the top of the page to refresh */
-let pull = null;
-function showPull(dy, label) {
-	$('pull').textContent = label;
-	$('pull').style.transform = `translate(-50%, ${Math.min(dy / 2, 50) - 60}px)`;
-}
-document.addEventListener('touchstart', ev => {
-	if (sheet || drag || window.scrollY > 0 || ev.target.closest('[data-grip]')) return;
-	pull = {y: ev.touches[0].clientY, dy: 0};
-}, {passive: true});
-document.addEventListener('touchmove', ev => {
-	if (!pull) return;
-	const dy = ev.touches[0].clientY - pull.y;
-	if ((!pull.dy && dy <= 0) || window.scrollY > 0) {
-		pull = null;
-		return;
-	}
-	if (!pull.dy && dy < 8) return;
-	ev.preventDefault();
-	pull.dy = dy;
-	showPull(dy, dy > 140 ? 'Release to refresh' : 'Pull to refresh');
-}, {passive: false});
-document.addEventListener('touchend', async () => {
-	if (!pull) return;
-	const {dy} = pull;
-	pull = null;
-	if (dy <= 140) {
-		$('pull').style.transform = '';
-		return;
-	}
-	showPull(140, 'Refreshing…');
-	syncFailed = false;
-	await fetchAll();
-	$('pull').style.transform = '';
-});
-
 document.addEventListener('keydown', ev => {
+	if (ev.key === 'Enter' && ev.target.id === 'f-name' && $('inviteBtn')) {
+		ev.preventDefault();
+		addNewName();
+		return;
+	}
 	if (ev.key === 'Escape' && sheet) closeSheet();
 });
+
+/* Shared round: a read-only page for golfers who aren't signed in, opened with ?r=<shareToken>.
+   The shared_round() database function returns only what's safe to show (no notes about golfers,
+   no league flags, nobody who's out). */
+function newShareToken() {
+	const bytes = crypto.getRandomValues(new Uint8Array(16));
+	return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function shareUrl(r) {
+	return `${location.origin}${location.pathname}?r=${r.shareToken}`;
+}
+function mapsUrl(course) {
+	return IS_APPLE ? `https://maps.apple.com/?q=${encodeURIComponent(course)}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(course)}`;
+}
+function icsText(r) {
+	const clean = v => String(v).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+	const stamp = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+	const groups = r.teeTimes.map(t => `${fmtTime(t.time)}: ${playersAt(r, t.id).map(displayName).join(', ') || 'open'}`);
+	const description = [...groups, r.notes].filter(Boolean).join('\n');
+	const first = r.teeTimes[0];
+	let when;
+	if (first) {
+		const [h, m] = first.time.split(':').map(Number);
+		const start = new Date(...r.date.split('-').map((n, i) => Number(n) - (i === 1 ? 1 : 0)), h, m);
+		const end = new Date(start.getTime() + (r.holes === 9 ? 135 : 270) * 60000);
+		when = [`DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`];
+	} else {
+		when = [`DTSTART;VALUE=DATE:${r.date.replace(/-/g, '')}`];
+	}
+	return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tee Sheet//EN', 'BEGIN:VEVENT',
+		`UID:${r.shareToken || r.id}@tee-sheet`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`, ...when,
+		`SUMMARY:${clean(`Golf at ${r.course} (${r.holes} holes)`)}`, `LOCATION:${clean(r.course)}`, `DESCRIPTION:${clean(description)}`,
+		'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+}
+function downloadCalendar(r) {
+	const url = URL.createObjectURL(new Blob([icsText(r)], {type: 'text/calendar'}));
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = `${r.course.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${r.date}.ics`;
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function shareSheet() {
+	const r = findRound(sheet.roundId);
+	return sheetHead('Share round') + `<div class="form">
+		<input class="input" id="f-share-link" readonly value="${esc(shareUrl(r))}" aria-label="Round link">
+		<div class="sheet-actions two">
+			<button class="secondary" type="button" data-action="copy-link">Copy link</button>
+			<button class="primary" type="button" data-action="text-link">Text link</button>
+		</div>
+		<button class="danger-btn" type="button" data-action="stop-sharing">Stop sharing</button>
+	</div>`;
+}
+
+let publicRound = null;
+async function startPublic(token) {
+	storeMode = 'public';
+	$('bar').hidden = true;
+	$('top').innerHTML = '<div class="brand">Tee Sheet</div>';
+	$('main').innerHTML = '<div class="empty"><strong>Loading round…</strong></div>';
+	const cfg = window.TEE_SHEET_CONFIG || {};
+	let result = {data: null, error: true};
+	if (window.supabase && cfg.supabaseUrl && cfg.supabaseKey) {
+		const client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {auth: {persistSession: false}});
+		try {
+			result = await client.rpc('shared_round', {token});
+		} catch (shareErr) {
+			result = {data: null, error: shareErr};
+		}
+	}
+	if (result.error) {
+		$('main').innerHTML = '<div class="empty"><strong>Can’t load this round right now</strong><button class="primary" data-action="reload">Try again</button></div>';
+		return;
+	}
+	if (!result.data) {
+		$('main').innerHTML = '<div class="empty"><strong>This round link isn’t active</strong></div>';
+		return;
+	}
+	publicRound = normalize({id: 'shared', ...result.data, shareToken: token});
+	renderPublic(publicRound);
+}
+function renderPublic(r) {
+	const people = list => list.map(p => `<li class="pub-row">${esc(displayName(p))}</li>`).join('');
+	let html = `<h1 class="course">${esc(r.course)}</h1>
+		<p class="when">${esc(fmtDate(r.date, {weekday: 'long', month: 'long', day: 'numeric'}))} · ${r.holes} holes · ${esc(relDay(r.date))}</p>`;
+	if (r.tentative) {
+		html += `<div class="booking-card"><div class="booking-text"><span class="booking-title">Tentative</span><span>Tee times aren’t booked yet.</span>
+			${r.bookOn ? `<span>Booking opens ${esc(fmtDate(r.bookOn, {weekday: 'short', month: 'short', day: 'numeric'}))}</span>` : ''}</div></div>`;
+	}
+	html += `<div class="pub-actions">
+		<a class="secondary" href="${esc(mapsUrl(r.course))}" target="_blank" rel="noopener">${icoPin}Directions</a>
+		<button class="secondary" data-action="add-calendar">${icoCalendar}Add to calendar</button>
+	</div>`;
+	if (r.notes) html += `<p class="notes">${esc(r.notes)}</p>`;
+	r.teeTimes.forEach(t => {
+		const ps = playersAt(r, t.id);
+		const {clock, mer} = splitTime(t.time);
+		const open = Math.max(0, t.spots - ps.length);
+		html += `<section class="tee"><div class="tee-head"><span class="tee-time">${clock}<small>${mer}</small></span><span class="tee-fill">${ps.length} of ${t.spots}</span></div>
+			<ul class="slots">${people(ps)}${open ? `<li class="pub-row pub-open">${open} open spot${open === 1 ? '' : 's'}</li>` : ''}</ul></section>`;
+	});
+	const teeIds = new Set(r.teeTimes.map(t => t.id));
+	const unplaced = r.players.filter(p => p.status === 'in' && !teeIds.has(p.teeTimeId));
+	if (unplaced.length) html += `<section class="tee"><div class="tee-head"><span class="tee-label">${r.teeTimes.length ? 'No tee time yet' : 'Playing'}</span></div><ul class="slots">${people(unplaced)}</ul></section>`;
+	const waiting = r.players.filter(p => p.status === 'pending');
+	if (waiting.length) html += `<section class="tee"><div class="tee-head"><span class="tee-label">Waiting to hear back</span></div><ul class="slots">${people(waiting)}</ul></section>`;
+	$('main').innerHTML = html;
+	$('foot').textContent = `Shared by ${OWNER_NAME}`;
+}
 
 /* Boot */
 async function onSession(session) {
@@ -1980,6 +2103,11 @@ function start() {
 	setInterval(() => {
 		if (pending.length) flush();
 	}, 30000);
+	const shared = new URLSearchParams(location.search).get('r');
+	if (shared) {
+		startPublic(shared);
+		return;
+	}
 	const cfg = window.TEE_SHEET_CONFIG || {};
 	if (!cfg.supabaseUrl || !cfg.supabaseKey) {
 		storeMode = 'local';

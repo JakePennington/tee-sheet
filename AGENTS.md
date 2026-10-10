@@ -4,7 +4,7 @@ Context for any AI assistant (or person) making changes to Tee Sheet. Setup step
 
 ## What it is
 
-A phone-first app for planning golf rounds: upcoming rounds (9 or 18 holes, booked or tentative), multiple tee times per round with a set number of spots, each golfer's status (in / pending / out), a saved list of golfers (ranked by how often they've played, and marked by whether they're in men's league with the owner), inviting several golfers at once and texting them, and arranging golfers by drag and drop.
+A phone-first app for planning golf rounds: upcoming rounds (9 or 18 holes, booked or tentative), multiple tee times per round with a set number of spots, each golfer's status (in / pending / out), a saved list of golfers (ranked by how often they've played, and marked by whether they're in men's league with the owner), inviting several golfers at once and texting them, arranging golfers by drag and drop, and a read-only link to share a round with golfers who aren't signed in.
 
 - Live site: https://jakepennington.github.io/tee-sheet/
 - Repo: https://github.com/JakePennington/tee-sheet (public, personal account)
@@ -18,7 +18,7 @@ A phone-first app for planning golf rounds: upcoming rounds (9 or 18 holes, book
 | `index.html` | The entire app: markup, CSS and JavaScript inline. No build step, no framework. |
 | `config.js` | Supabase URL, **publishable** key, and `ownerName` (the owner's name as a player; defaults to "Me"). Public by design; never put the secret/service_role key here. |
 | `sw.js` | Service worker: network-first for page loads and `config.js`; cache-first for the pinned supabase-js build and Google Fonts, so the app opens offline. |
-| `supabase-setup.sql` | Schema and row-level security. Keep it in sync with any database change. |
+| `supabase-setup.sql` | Schema, row-level security, and the `shared_round()` function for share links. Keep it in sync with any database change. |
 | `.github/workflows/keep-supabase-awake.yml` | Twice-weekly ping so the free Supabase project doesn't pause. |
 | `manifest.webmanifest`, `icons/` | Home-screen name and icon (iPhone uses `icons/icon-180.png`). |
 
@@ -45,6 +45,7 @@ Round `data` shape:
   "notes": "Carts booked for both groups.",
   "tentative": true,
   "bookOn": "2026-10-10",
+  "shareToken": "kbLdBmuANe3JWfCBESVsYw",
   "teeTimes": [{"id": "t1", "time": "08:10", "spots": 4}],
   "players": [
     {"id": "p1", "name": "Jake Pennington", "regularId": "", "status": "in", "teeTimeId": "t1"},
@@ -62,6 +63,7 @@ Round `data` shape:
 - Each tee time holds `spots` In players (1–4, the number booked; defaults to `MAX_SPOTS` = 4). Open spots count only In players. Overbooking is allowed and shown as a warning.
 - `regularId` links a player to a golfer. On rounds the golfer's **current** name is shown (`displayName()`); `name` is a fallback snapshot. Players without a `regularId` (the owner, or very old data) are matched to golfers by name.
 - `note` is optional free text for that golfer on that round.
+- `shareToken` is a random 22-character token set when the owner taps Share (cleared by Stop sharing). See **Share links** below.
 - New rounds always start with the owner (`ownerName`) as In on the first tee time. Players saved with the old name `"Me"` are shown as `ownerName`.
 - Older rounds may contain `guestOf`, `textedAt` or `example` fields from removed features; they're ignored.
 
@@ -88,7 +90,7 @@ Regular (golfer) `data` shape:
 ### Storage and sync
 
 - **Modes:** if `config.js` has keys, the app requires sign-in and uses Supabase (`storeMode = 'cloud'`). If the keys are blank it runs in device-only test mode (`'local'`). If the keys are set but supabase-js didn't load, it shows "Can't reach your tee sheet" (`'unreachable'`); it never silently falls back to device-only.
-- **Writes** are optimistic. `saveDoc(table, doc)` / `deleteDoc(table, id)` update the screen, then queue a job in `pending`, which is persisted to localStorage (`teesheet.pending.v1`) so unsent changes survive restarts. `flush()` sends jobs in order: inserts for new docs, and updates conditioned on `updated_at` equal to the last value seen from the server (`serverAt`). If the row changed elsewhere, the update matches nothing, and the app takes the server copy and says so (`takeServerCopy`). Network failures leave the job queued; it retries on foreground, the `online` event, pull-to-refresh, and every 30 seconds. A "N changes not synced yet · Retry" bar shows while it's failing.
+- **Writes** are optimistic. `saveDoc(table, doc)` / `deleteDoc(table, id)` update the screen, then queue a job in `pending`, which is persisted to localStorage (`teesheet.pending.v1`) so unsent changes survive restarts. `flush()` sends jobs in order: inserts for new docs, and updates conditioned on `updated_at` equal to the last value seen from the server (`serverAt`). If the row changed elsewhere, the update matches nothing, and the app takes the server copy and says so (`takeServerCopy`). Network failures leave the job queued; it retries on foreground, the `online` event, and every 30 seconds. A "N changes not synced yet · Retry" bar shows while it's failing.
 - **Reads:** the last synced data is cached in localStorage (`teesheet.cache.v1`) and shown immediately on launch, then `fetchAll()` replaces it with the server copy, keeping any pending local edits on top. If the fetch fails with a cache it shows "Offline. Showing your saved copy."; with no cache it shows the can't-reach screen (which mentions a paused Supabase project) with Try again, and editing is disabled until data loads.
 - **Realtime** changes from other devices apply immediately unless that record has a pending local edit.
 
@@ -96,18 +98,17 @@ Regular (golfer) `data` shape:
 
 - **Rendering:** plain functions build HTML strings (`renderList`, `renderRound`, `renderRegulars`, `sheetHtml`). All user text goes through `esc()`. Clicks are handled by one delegated listener keyed on `data-action`. Edits happen in bottom sheets (`openSheet(kind, data)`); confirmations are inline ("Tap again to…"), not `confirm()` dialogs.
 - **Ranking** (`golferStats`, `rankedRegulars(stats)`): golfers ordered by how many **past** rounds they were In for, then most recent, then name. Shown as "5 rounds · last Oct 3".
-- **Invite golfers** (`invitePlayersSheet`, bottom bar button): a ranked checklist of golfers not on the round. The list order never changes while open; picks appear as removable chips in a Selected strip above it. Picking from a search clears the search and puts the cursor back in it. "+ New golfer" at the top reveals a name field; new names are always saved to Golfers (not league), and existing or archived names link to that golfer. The button is disabled until something is picked. Invitees become Pending, then the sheet becomes **Text your invites** (`sendInvitesSheet`) with an editable message and a Text button per golfer.
+- **Invite golfers** (`invitePlayersSheet`, bottom bar button): a ranked checklist of golfers not on the round. The list order never changes while open; picks appear as removable chips in the sticky bar above the Invite button. Picking from a search clears the search and puts the cursor back in it. "+ New golfer" at the top reveals a name field with an Add button (or return): each name becomes a chip too (`sheet.newNames`), and nothing is saved until Invite. A typed name matching an active golfer checks that golfer instead; new or archived names are saved/restored to Golfers (not league) on Invite. The button is disabled until something is picked. Invitees become Pending, then the sheet becomes **Text your invites** (`sendInvitesSheet`) with an editable message and a Text button per golfer.
 - **Add from an open spot** (`add-golfers`, same sheet with `addTo` set): golfers are added as **In** directly into that tee time (extras beyond its spots go to No tee time yet). The list also includes golfers already Waiting or Out, so they can be confirmed. No text step.
 - **Texting** (`openMessages`) opens a new Messages compose with the invite filled in via `sms:&body=` (`?body=` on non-Apple devices); the owner picks the recipient. The iOS share sheet was tried and didn't offer Messages from the home-screen app. Invite text: `Playing 18 holes at <course> on <Sat, Oct 17> at <time>, you in?`, using the earliest tee time with room.
-- **Drag and drop**: every golfer has a grip. Every section is a drop zone with `data-drop-status` (plus `data-drop-tee` for In sections): tee time = In there, No tee time yet = In, Waiting to hear back = Pending, Can't make it = Out. Dropping on a golfer in a tee time swaps. Empty sections appear as drop zones (`dropZone()`) only while dragging. Pointer events with `touch-action: none` on the grip only; `render()` is skipped mid-drag. Moves share `moveGolfer()`.
-- **Long-press** a golfer (or right-click on desktop) opens a Move sheet (`moveSheet`) listing every tee time and section, as a non-drag alternative.
+- **Drag and drop**: the grip (⠿) drags immediately (`touch-action: none`). Anywhere else on a row: hold 300 ms on touch (so a quick swipe scrolls and a tap opens the golfer), or just start moving with a mouse. Touch drags use touch events with `preventDefault` once the hold fires; grip and mouse drags use pointer events. A click right after a drag is suppressed. Every section is a drop zone with `data-drop-status` (plus `data-drop-tee` for In sections): tee time = In there, No tee time yet = In, Waiting to hear back = Pending, Can't make it = Out. Dropping on a golfer in a tee time swaps. Empty sections appear as drop zones (`dropZone()`) only while dragging. `render()` is skipped mid-drag. Moves share `moveGolfer()`.
 - **Tee times on the round page:** entered in the New round form, then managed only on the round page. Tapping a tee header's time opens `teeSheet` (time and golfers booked). "+ Add tee time" adds one 10 minutes after the last (capped at 11:59 PM) with 4 spots. The header × arms on the first tap (`armedTee`) and removes on the second.
-- **Times** use `timeField()`: a list of 10-minute steps from 5:00 AM to 8:00 PM plus "Type a time…", parsed by `parseTime()` ("8:07", "807", "8:07p", "13:40"; a bare 1–5 is read as PM). iOS ignores `step` on native time pickers, hence the custom list.
+- **Times** use the native `<input type="time">` (a custom 10-minute list was tried and reverted at the owner's request).
 - **Swipe to close** any sheet: from its header any time, or from anywhere once it's scrolled to the top and nothing has been picked or typed (`sheet.dirty`). Past a third of its height or a quick flick closes it.
-- **Pull to refresh** at the top of the home, round or golfers page (`fetchAll()`).
 - **Keyboard:** `fitSheet()` sizes the sheet wrapper to `visualViewport` so sheets sit above the on-screen keyboard.
 - **Golfers screen:** League and Others sections, a search box once there are more than 8, and a collapsed Archived section with Restore.
 - **Sign out** is at the bottom of the home screen only.
+- **Share links:** the round header's Share button creates `shareToken` and opens `shareSheet` (copy link, text link, Stop sharing). The link is the app URL with `?r=<token>`; `start()` sees it and runs `startPublic()`, which needs no sign-in: it calls the `shared_round(token)` database function (SECURITY DEFINER, executable by anon) and renders `renderPublic()`. The function returns only course, date, holes, round notes, tentative/bookOn, tee times, and In/Pending golfers' current names and tee times. It never returns per-golfer notes, golfer notes, league flags, or Out golfers. The page shows the round, tee times with open spots, No tee time yet, Waiting to hear back, Directions (Apple Maps on Apple devices, Google Maps elsewhere), Add to calendar (`icsText()` → .ics download at the earliest tee time, 4.5 h for 18 holes / 2.25 h for 9), and "Shared by <ownerName>".
 - **Updates:** `sw.js` serves page loads network-first, and `reloadIfUpdated()` reloads if the page's HTML changed since launch (checked on open and on return to foreground).
 
 ## Conventions
