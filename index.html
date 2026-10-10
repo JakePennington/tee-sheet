@@ -157,8 +157,6 @@ p { margin: 0; }
 .head-actions { flex: none; display: flex; gap: 6px; }
 .edit-btn.icon-only { width: 36px; padding: 0; justify-content: center; }
 .edit-btn.is-on { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
-.pub-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
-.pub-actions .secondary { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; font-size: 15px; box-shadow: none; }
 .pub-row { padding: 14px; font-weight: 600; }
 .pub-open { font-weight: 400; color: var(--ink-2); }
 .course { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: .01em; overflow-wrap: break-word; }
@@ -767,7 +765,6 @@ const icoCheck = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" st
 const icoPencil = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
 const icoMessage = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5c0 4.1-3.6 7.5-8 7.5-1.2 0-2.3-.2-3.3-.6L4 19.5l1.2-3.6C4.4 14.6 4 13.1 4 11.5 4 7.4 7.6 4 12 4s8 3.4 8 7.5z"/></svg>';
 const icoShare = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
-const icoPin = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
 const icoBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function render() {
@@ -1575,7 +1572,7 @@ document.addEventListener('click', ev => {
 		else box.select();
 	} else if (action === 'text-link') {
 		const sr = findRound(sheet.roundId);
-		openMessages(`Tee times for ${sr.course} on ${fmtDate(sr.date, {weekday: 'short', month: 'short', day: 'numeric'})}: ${shareUrl(sr)}`);
+		openMessages(`Tee time for ${sr.course} on ${fmtDate(sr.date, {weekday: 'short', month: 'short', day: 'numeric'})}: ${shareUrl(sr)}`);
 	} else if (action === 'stop-sharing') {
 		if (!sheet.armed) {
 			sheet.armed = true;
@@ -1586,8 +1583,6 @@ document.addEventListener('click', ev => {
 		editRound(sheet.roundId, x => { x.shareToken = ''; });
 		closeSheet();
 		toast('Link turned off');
-	} else if (action === 'add-calendar' && publicRound) {
-		downloadCalendar(publicRound);
 	} else if (action === 'reload') {
 		location.reload();
 	} else if (action === 'add-new-name') {
@@ -1935,39 +1930,6 @@ function newShareToken() {
 function shareUrl(r) {
 	return `${location.origin}${location.pathname}?r=${r.shareToken}`;
 }
-function mapsUrl(course) {
-	return IS_APPLE ? `https://maps.apple.com/?q=${encodeURIComponent(course)}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(course)}`;
-}
-function icsText(r) {
-	const clean = v => String(v).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
-	const stamp = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-	const groups = r.teeTimes.map(t => `${fmtTime(t.time)}: ${playersAt(r, t.id).map(displayName).join(', ') || 'open'}`);
-	const description = [...groups, r.notes].filter(Boolean).join('\n');
-	const first = r.teeTimes[0];
-	let when;
-	if (first) {
-		const [h, m] = first.time.split(':').map(Number);
-		const start = new Date(...r.date.split('-').map((n, i) => Number(n) - (i === 1 ? 1 : 0)), h, m);
-		const end = new Date(start.getTime() + (r.holes === 9 ? 135 : 270) * 60000);
-		when = [`DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`];
-	} else {
-		when = [`DTSTART;VALUE=DATE:${r.date.replace(/-/g, '')}`];
-	}
-	return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tee Sheet//EN', 'BEGIN:VEVENT',
-		`UID:${r.shareToken || r.id}@tee-sheet`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`, ...when,
-		`SUMMARY:${clean(`Golf at ${r.course} (${r.holes} holes)`)}`, `LOCATION:${clean(r.course)}`, `DESCRIPTION:${clean(description)}`,
-		'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-}
-function downloadCalendar(r) {
-	const url = URL.createObjectURL(new Blob([icsText(r)], {type: 'text/calendar'}));
-	const a = document.createElement('a');
-	a.href = url;
-	a.download = `${r.course.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${r.date}.ics`;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 function shareSheet() {
 	const r = findRound(sheet.roundId);
 	return sheetHead('Share round') + `<div class="form">
@@ -1980,7 +1942,6 @@ function shareSheet() {
 	</div>`;
 }
 
-let publicRound = null;
 async function startPublic(token) {
 	storeMode = 'public';
 	$('bar').hidden = true;
@@ -2004,8 +1965,7 @@ async function startPublic(token) {
 		$('main').innerHTML = '<div class="empty"><strong>This round link isn’t active</strong></div>';
 		return;
 	}
-	publicRound = normalize({id: 'shared', ...result.data, shareToken: token});
-	renderPublic(publicRound);
+	renderPublic(normalize({id: 'shared', ...result.data, shareToken: token}));
 }
 function renderPublic(r) {
 	const people = list => list.map(p => `<li class="pub-row">${esc(displayName(p))}</li>`).join('');
@@ -2015,10 +1975,6 @@ function renderPublic(r) {
 		html += `<div class="booking-card"><div class="booking-text"><span class="booking-title">Tentative</span><span>Tee times aren’t booked yet.</span>
 			${r.bookOn ? `<span>Booking opens ${esc(fmtDate(r.bookOn, {weekday: 'short', month: 'short', day: 'numeric'}))}</span>` : ''}</div></div>`;
 	}
-	html += `<div class="pub-actions">
-		<a class="secondary" href="${esc(mapsUrl(r.course))}" target="_blank" rel="noopener">${icoPin}Directions</a>
-		<button class="secondary" data-action="add-calendar">${icoCalendar}Add to calendar</button>
-	</div>`;
 	if (r.notes) html += `<p class="notes">${esc(r.notes)}</p>`;
 	r.teeTimes.forEach(t => {
 		const ps = playersAt(r, t.id);
