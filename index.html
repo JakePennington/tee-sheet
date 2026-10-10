@@ -130,13 +130,13 @@ p { margin: 0; }
 .card-title { font-weight: 600; font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }
 .card-when { flex: none; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
 .card-times { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .02em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.card-holes { margin-left: 8px; font-family: var(--font-body); font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); }
 .card-times.none { font-family: var(--font-body); font-weight: 400; font-size: 14px; color: var(--ink-2); }
 .counts { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .chip.in { background: var(--in-bg); color: var(--in); }
 .chip.pending { background: var(--pending-bg); color: var(--pending); }
 .chip.out { background: var(--out-bg); color: var(--out); }
-.chip.tag { background: var(--surface-2); color: var(--ink-2); font-weight: 500; }
 
 .meter { display: flex; flex-wrap: wrap; gap: 8px; }
 .meter-group { display: flex; gap: 3px; }
@@ -147,6 +147,7 @@ p { margin: 0; }
 
 .empty { text-align: center; padding: 40px 20px; border: 1.5px dashed var(--line); border-radius: var(--radius); color: var(--ink-2); display: grid; gap: 6px; }
 .empty strong { color: var(--ink); font-size: 17px; }
+.empty .primary { justify-self: center; margin-top: 10px; padding: 0 24px; }
 
 /* Round detail */
 .round-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -195,6 +196,11 @@ textarea.input.note-box { min-height: 64px; }
 .pill.out { background: var(--out-bg); color: var(--out); }
 .league { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; vertical-align: 2px; }
 .page-head { margin-bottom: 16px; }
+.move-row { width: 100%; display: grid; gap: 1px; min-height: 52px; padding: 8px 14px; border: 0; background: none; text-align: left; }
+.move-row[disabled] { opacity: .45; }
+.player .p-main { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.pull { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%; z-index: 30; padding: 6px 14px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow); color: var(--ink-2); font-size: 14px; font-weight: 600; transform: translate(-50%, -60px); transition: transform .15s; }
+.restore-btn { flex: none; min-height: 36px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 999px; background: none; color: var(--accent); font-weight: 600; }
 .picker { margin-top: 0; }
 .pick-row { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 14px; border: 0; background: none; text-align: left; }
 .pick-row.on { background: var(--accent-soft); }
@@ -202,6 +208,10 @@ textarea.input.note-box { min-height: 64px; }
 .pick-row.on .tick { background: var(--accent); border-color: var(--accent); }
 .pick-row.on .tick::after { content: ''; width: 6px; height: 11px; border: solid var(--accent-ink); border-width: 0 2.5px 2.5px 0; transform: translateY(-1px) rotate(45deg); }
 .pick-text { min-width: 0; display: grid; gap: 1px; }
+.picked { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.picked::-webkit-scrollbar { display: none; }
+.pick-chip { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 10px 0 12px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 14px; }
+.pick-chip span { font-size: 17px; line-height: 1; opacity: .8; }
 .open-slot { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 10px 14px; border: 0; background: none; color: var(--ink-2); text-align: left; }
 .open-slot .plus { width: 26px; height: 26px; border-radius: 50%; border: 1.5px dashed var(--line); display: grid; place-items: center; font-size: 18px; line-height: 1; }
 .open-slot:hover .plus { border-color: var(--accent); color: var(--accent); }
@@ -218,13 +228,11 @@ body.is-dragging .drop-only { display: block; }
 .drop-only .tee-head { min-height: 64px; }
 .hint { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
 
-.row-actions { display: grid; gap: 10px; margin-top: 18px; }
 .tee-remove { flex: none; width: 32px; height: 32px; margin-right: -6px; display: grid; place-items: center; border: 0; border-radius: 999px; background: none; color: var(--ink-2); }
 .tee-remove:hover { color: var(--out); }
 .tee-remove.armed { width: auto; padding: 0 12px; background: var(--out); color: var(--surface); font-weight: 600; font-size: 13px; }
 .dashed-btn { width: 100%; min-height: 48px; border: 1.5px dashed var(--line-strong); border-radius: var(--radius); background: none; color: var(--accent); font-weight: 600; }
 .add-tee-btn { margin-top: 12px; }
-.ghost { min-height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-weight: 600; color: var(--accent); padding: 0 12px; }
 
 /* Bottom action bar */
 .bar {
@@ -291,7 +299,7 @@ body.is-dragging .drop-only { display: block; }
 .picker-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); display: grid; color: var(--accent); pointer-events: none; }
 .input::-webkit-calendar-picker-indicator { position: absolute; right: 0; top: 0; width: 46px; height: 100%; opacity: 0; cursor: pointer; }
 textarea.input { min-height: 80px; resize: vertical; }
-.input[type="date"], .input[type="time"] {
+.input[type="date"] {
 	-webkit-appearance: none;
 	appearance: none;
 	display: block;
@@ -308,6 +316,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 .seg input[value="pending"]:checked + label { background: var(--pending-bg); border-color: var(--pending); color: var(--pending); }
 .seg input[value="out"]:checked + label { background: var(--out-bg); border-color: var(--out); color: var(--out); }
 .seg.two { grid-template-columns: repeat(2, 1fr); }
+.seg input[name="holes"]:checked + label { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .seg input[value="booked"]:checked + label { background: var(--in-bg); border-color: var(--in); color: var(--in); }
 .seg input[value="tentative"]:checked + label { background: var(--pending-bg); border-color: var(--pending); border-style: dashed; color: var(--pending); }
 .card.tentative { background: var(--pending-bg); border: 1.5px dashed var(--pending); box-shadow: none; }
@@ -326,12 +335,12 @@ textarea.input { min-height: 80px; resize: vertical; }
 .booking-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--in); color: var(--surface); font-weight: 600; font-size: 15px; }
 .times { display: grid; gap: 8px; }
 .time-row { display: flex; gap: 8px; }
-.time-row .picker-wrap { flex: 1; }
-.time-row .input { font-variant-numeric: tabular-nums; }
+.time-field { flex: 1; min-width: 0; display: grid; gap: 8px; }
+.time-field .input { font-variant-numeric: tabular-nums; }
 .time-row select.spots-select { flex: none; width: 116px; padding-inline: 10px 6px; }
 @media (max-width: 359px) {
 	.time-row { flex-wrap: wrap; }
-	.time-row .picker-wrap { flex-basis: 100%; }
+	.time-row .time-field { flex-basis: 100%; }
 	.time-row select.spots-select { flex: 1; width: auto; }
 }
 .remove-time { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--line-strong); border-radius: 10px; background: var(--field); color: var(--out); }
@@ -345,7 +354,6 @@ textarea.input { min-height: 80px; resize: vertical; }
 .sheet-actions.two .secondary { order: -1; }
 .sheet-actions.sticky { position: sticky; bottom: calc(-1 * var(--sheet-pb)); z-index: 1; margin: 0 -16px calc(-1 * var(--sheet-pb)); padding: 10px 16px var(--sheet-pb); background: var(--surface); border-top: 1px solid var(--line); }
 .primary[disabled] { opacity: .5; }
-.with-icon { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .text-link { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .send-row { padding-block: 6px; }
 .send-row.is-sent .text-link { background: var(--in-bg); color: var(--in); }
@@ -364,6 +372,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 
 <div class="app">
 	<header class="top" id="top"></header>
+	<div class="notice" id="status" role="status" hidden></div>
 	<main id="main"></main>
 	<p class="foot" id="foot"></p>
 </div>
@@ -373,6 +382,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 	<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="pull" id="pull" aria-hidden="true"></div>
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
@@ -390,9 +400,9 @@ let storeMode = 'loading';
 let sb = null;
 let userId = null;
 let channel = null;
-const deletedKeys = new Set();
 let view = {name: 'list', roundId: null};
 let showPast = false;
+let showArchived = false;
 let sheet = null;
 let drag = null;
 let armedTee = null;
@@ -442,7 +452,7 @@ function fmtTimes(teeTimes) {
 }
 function addMinutes(t, mins) {
 	const [h, m] = t.split(':').map(Number);
-	const total = (h * 60 + m + mins) % 1440;
+	const total = Math.min(h * 60 + m + mins, 23 * 60 + 59);
 	return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 }
 function firstTime(r) {
@@ -457,8 +467,8 @@ function normalize(r) {
 		id: r.id,
 		course: r.course || 'Untitled course',
 		date: r.date || todayStr(),
+		holes: r.holes === 9 ? 9 : 18,
 		notes: r.notes || '',
-		example: !!r.example,
 		tentative: !!r.tentative,
 		bookOn: r.tentative ? r.bookOn || '' : '',
 		teeTimes: (Array.isArray(r.teeTimes) ? r.teeTimes : [])
@@ -493,11 +503,12 @@ function setStatus(p, status) {
 }
 function statusToast(r, pid) {
 	const p = r.players.find(x => x.id === pid);
-	if (p.status === 'in' && r.teeTimes.length) return `${p.name}: In · drag to a tee time`;
-	return `${p.name}: ${STATUS_LABEL[p.status]}`;
+	if (p.status === 'in' && r.teeTimes.length) return `${displayName(p)}: In · drag to a tee time`;
+	return `${displayName(p)}: ${STATUS_LABEL[p.status]}`;
 }
 function nameOf(r, pid) {
-	return r.players.find(p => p.id === pid)?.name ?? '';
+	const p = r.players.find(x => x.id === pid);
+	return p ? displayName(p) : '';
 }
 function knownCourses() {
 	return [...new Set(rounds.map(r => r.course))].sort();
@@ -518,7 +529,10 @@ function sameName(a, b) {
 	return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 function regularFor(p) {
-	return regulars.find(g => g.id === p.regularId) || regulars.find(g => sameName(g.name, p.name));
+	return p.regularId ? regulars.find(g => g.id === p.regularId) : regulars.find(g => sameName(g.name, p.name));
+}
+function displayName(p) {
+	return (p.regularId && regularFor(p)?.name) || p.name;
 }
 function isLeague(p) {
 	return !!regularFor(p)?.league;
@@ -526,13 +540,11 @@ function isLeague(p) {
 function byStatusThenLeague(a, b) {
 	return STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || isLeague(b) - isLeague(a);
 }
-function onRound(r, g) {
-	return r.players.some(p => p.regularId === g.id || sameName(p.name, g.name));
-}
 function golferStats() {
 	const stats = new Map();
-	rounds.forEach(r => regulars.forEach(g => {
-		const p = r.players.find(x => x.regularId === g.id || sameName(x.name, g.name));
+	const today = todayStr();
+	rounds.filter(r => r.date < today).forEach(r => regulars.forEach(g => {
+		const p = r.players.find(x => regularFor(x)?.id === g.id);
 		if (p?.status !== 'in') return;
 		const s = stats.get(g.id) || {played: 0, last: ''};
 		s.played++;
@@ -544,130 +556,191 @@ function golferStats() {
 function activeRegulars() {
 	return regulars.filter(g => !g.archived);
 }
-function rankedRegulars() {
-	const stats = golferStats();
+function rankedRegulars(stats) {
 	return activeRegulars().sort((a, b) => stats(b).played - stats(a).played || stats(b).last.localeCompare(stats(a).last) || a.name.localeCompare(b.name));
 }
 
-/* Storage: Supabase when configured and signed in, this browser otherwise */
+/* Storage: Supabase when configured, this browser only when config.js is blank (for testing).
+   In cloud mode every change is saved locally first, then sent to Supabase in order. Unsent changes
+   survive app restarts and retry when the app comes back online or to the foreground. Each update only
+   applies if the row still has the updated_at we last saw, so an edit made on another device is never
+   silently overwritten. */
 const TABLES = {
 	rounds: {lsKey: 'teesheet.rounds.v1', normalize, get: () => rounds, set: list => { rounds = list; }},
 	regulars: {lsKey: 'teesheet.regulars.v1', normalize: normalizeRegular, get: () => regulars, set: list => { regulars = list; }},
 };
+const CACHE_KEY = 'teesheet.cache.v1';
+const PENDING_KEY = 'teesheet.pending.v1';
+let pending = [];
+let serverAt = {};
+let flushing = false;
+let syncFailed = false;
+let loadError = false;
 
-function lsRead(table) {
+function lsGet(key) {
 	try {
-		return (JSON.parse(localStorage.getItem(TABLES[table].lsKey)) || []).map(TABLES[table].normalize);
+		return JSON.parse(localStorage.getItem(key));
 	} catch (readErr) {
-		return [];
+		return null;
 	}
 }
-function lsWrite(table) {
+function lsSet(key, value) {
 	try {
-		localStorage.setItem(TABLES[table].lsKey, JSON.stringify(TABLES[table].get()));
+		localStorage.setItem(key, JSON.stringify(value));
 	} catch (writeErr) {
 		toast('Couldn’t save on this device.');
 	}
 }
-
-const writeQueues = new Map();
-function queueWrite(key, fn) {
-	const q = writeQueues.get(key) || {running: false, next: null};
-	q.next = fn;
-	writeQueues.set(key, q);
-	if (!q.running) drain(q);
+function lsRead(table) {
+	return (lsGet(TABLES[table].lsKey) || []).map(TABLES[table].normalize);
 }
-async function drain(q) {
-	q.running = true;
-	while (q.next) {
-		const fn = q.next;
-		q.next = null;
-		try {
-			await fn();
-		} catch (saveErr) {
-			onWriteError(saveErr);
-		}
-	}
-	q.running = false;
+function saveCache() {
+	lsSet(CACHE_KEY, {userId, rounds, regulars, serverAt});
+	lsSet(PENDING_KEY, {userId, jobs: pending});
 }
-function onWriteError() {
-	toast('Couldn’t save. Check your connection and try again.');
-	fetchAll();
-}
-function isWriting(table, id) {
-	return !!writeQueues.get(`${table}/${id}`)?.running;
+function loadCache() {
+	const cache = lsGet(CACHE_KEY);
+	const saved = lsGet(PENDING_KEY);
+	pending = saved?.userId === userId ? saved.jobs : [];
+	if (cache?.userId !== userId) return false;
+	rounds = cache.rounds.map(normalize);
+	regulars = cache.regulars.map(normalizeRegular);
+	serverAt = cache.serverAt || {};
+	return true;
 }
 
+function putLocal(table, doc) {
+	TABLES[table].set([...TABLES[table].get().filter(d => d.id !== doc.id), doc]);
+}
 function saveDoc(table, doc) {
 	const now = new Date().toISOString();
 	const next = TABLES[table].normalize({...doc, updatedAt: now, createdAt: doc.createdAt || now});
-	const list = [...TABLES[table].get()];
-	const idx = list.findIndex(d => d.id === next.id);
-	if (idx === -1) list.push(next);
-	else list[idx] = next;
-	TABLES[table].set(list);
+	putLocal(table, next);
 	render();
-	if (storeMode === 'cloud') {
-		const {id, ...data} = next;
-		queueWrite(`${table}/${id}`, async () => {
-			const {error} = await sb.from(table).upsert({id, user_id: userId, data, updated_at: data.updatedAt});
-			if (error) throw error;
-		});
-	} else {
-		lsWrite(table);
+	if (storeMode !== 'cloud') {
+		lsSet(TABLES[table].lsKey, TABLES[table].get());
+		return;
 	}
+	const key = `${table}/${next.id}`;
+	const job = pending.find(j => j.key === key);
+	if (job) Object.assign(job, {op: 'save', doc: next});
+	else pending.push({key, table, id: next.id, op: 'save', doc: next, base: serverAt[key] ?? null});
+	saveCache();
+	flush();
 }
 function deleteDoc(table, id) {
 	TABLES[table].set(TABLES[table].get().filter(d => d.id !== id));
-	deletedKeys.add(`${table}/${id}`);
 	render();
-	if (storeMode === 'cloud') {
-		queueWrite(`${table}/${id}`, async () => {
-			const {error} = await sb.from(table).delete().eq('id', id);
-			if (error) throw error;
-		});
-	} else {
-		lsWrite(table);
+	if (storeMode !== 'cloud') {
+		lsSet(TABLES[table].lsKey, TABLES[table].get());
+		return;
 	}
+	const key = `${table}/${id}`;
+	const job = pending.find(j => j.key === key);
+	if (job && job.base === null && !flushing) pending = pending.filter(j => j !== job);
+	else if (job) Object.assign(job, {op: 'delete', doc: null});
+	else pending.push({key, table, id, op: 'delete', doc: null, base: serverAt[key] ?? null});
+	saveCache();
+	flush();
 }
 
-async function fetchTable(table) {
-	const {data, error} = await sb.from(table).select('id, data');
-	if (error) return false;
-	const merged = new Map(data.map(row => [row.id, TABLES[table].normalize({id: row.id, ...row.data})]));
-	TABLES[table].get().forEach(local => {
-		const remote = merged.get(local.id);
-		if ((remote && local.updatedAt > remote.updatedAt) || (!remote && isWriting(table, local.id))) merged.set(local.id, local);
-	});
-	merged.forEach((doc, id) => {
-		if (deletedKeys.has(`${table}/${id}`)) merged.delete(id);
-	});
-	TABLES[table].set([...merged.values()]);
-	return true;
+async function sendJob(job) {
+	if (job.op === 'delete') {
+		const {error} = await sb.from(job.table).delete().eq('id', job.id);
+		if (error) throw error;
+		return {at: null};
+	}
+	const {id, ...data} = job.doc;
+	const row = {data, updated_at: new Date().toISOString()};
+	if (job.base === null) {
+		const {data: rows, error} = await sb.from(job.table).insert({id, user_id: userId, ...row}).select('updated_at');
+		if (error?.code === '23505') return {conflict: true};
+		if (error) throw error;
+		return {at: rows[0].updated_at};
+	}
+	const {data: rows, error} = await sb.from(job.table).update(row).eq('id', id).eq('updated_at', job.base).select('updated_at');
+	if (error) throw error;
+	return rows.length ? {at: rows[0].updated_at} : {conflict: true};
 }
+async function takeServerCopy(job) {
+	const {data: rows, error} = await sb.from(job.table).select('id, data, updated_at').eq('id', job.id);
+	if (error) throw error;
+	TABLES[job.table].set(TABLES[job.table].get().filter(d => d.id !== job.id));
+	if (rows.length) {
+		putLocal(job.table, TABLES[job.table].normalize({id: job.id, ...rows[0].data}));
+		serverAt[job.key] = rows[0].updated_at;
+	} else {
+		delete serverAt[job.key];
+	}
+	toast('That was changed on another device. Showing the latest.');
+}
+async function flush() {
+	if (storeMode !== 'cloud' || flushing || !pending.length) return;
+	flushing = true;
+	try {
+		while (pending.length) {
+			const job = pending[0];
+			const sent = {op: job.op, doc: job.doc};
+			const result = await sendJob(job);
+			if (result.conflict) {
+				await takeServerCopy(job);
+				pending.shift();
+			} else {
+				if (result.at) serverAt[job.key] = result.at;
+				else delete serverAt[job.key];
+				if (job.op === sent.op && job.doc === sent.doc) pending.shift();
+				else job.base = serverAt[job.key] ?? null;
+			}
+			saveCache();
+		}
+		syncFailed = false;
+	} catch (syncErr) {
+		syncFailed = true;
+	}
+	flushing = false;
+	render();
+}
+
 async function fetchAll() {
-	if (storeMode !== 'cloud') return;
-	const results = await Promise.all(Object.keys(TABLES).map(fetchTable));
-	loaded = true;
-	if (results.includes(false)) toast('Couldn’t load everything. Check your connection and reopen the app.');
+	if (storeMode !== 'cloud' || !userId) return;
+	try {
+		const results = await Promise.all(Object.keys(TABLES).map(async table => {
+			const {data, error} = await sb.from(table).select('id, data, updated_at');
+			if (error) throw error;
+			return [table, data];
+		}));
+		results.forEach(([table, rows]) => {
+			const merged = new Map(rows.map(row => [row.id, TABLES[table].normalize({id: row.id, ...row.data})]));
+			rows.forEach(row => { serverAt[`${table}/${row.id}`] = row.updated_at; });
+			pending.filter(j => j.table === table).forEach(j => {
+				if (j.op === 'save') merged.set(j.id, j.doc);
+				else merged.delete(j.id);
+			});
+			TABLES[table].set([...merged.values()]);
+		});
+		loaded = true;
+		loadError = false;
+		saveCache();
+		flush();
+	} catch (loadErr) {
+		loadError = true;
+	}
 	render();
 }
 function applyChange(table, payload) {
-	const list = TABLES[table].get();
+	const id = payload.new?.id ?? payload.old?.id;
+	const key = `${table}/${id}`;
+	if (!id || pending.some(j => j.key === key)) return;
 	if (payload.eventType === 'DELETE') {
-		const id = payload.old?.id;
-		if (id && list.some(d => d.id === id) && !isWriting(table, id)) {
-			TABLES[table].set(list.filter(d => d.id !== id));
-			render();
-		}
-		return;
+		if (!TABLES[table].get().some(d => d.id === id)) return;
+		TABLES[table].set(TABLES[table].get().filter(d => d.id !== id));
+		delete serverAt[key];
+	} else {
+		if (!payload.new.data) return;
+		putLocal(table, TABLES[table].normalize({id, ...payload.new.data}));
+		serverAt[key] = payload.new.updated_at;
 	}
-	const row = payload.new;
-	if (!row?.id || !row.data || deletedKeys.has(`${table}/${row.id}`)) return;
-	const incoming = TABLES[table].normalize({id: row.id, ...row.data});
-	const local = list.find(d => d.id === row.id);
-	if (local && local.updatedAt >= incoming.updatedAt) return;
-	TABLES[table].set([...list.filter(d => d.id !== row.id), incoming]);
+	saveCache();
 	render();
 }
 function editRound(id, mutate) {
@@ -680,7 +753,6 @@ function editRound(id, mutate) {
 
 /* Rendering */
 const icoCalendar = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
-const icoClock = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 const icoRemove = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const icoCheck = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const icoPencil = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
@@ -693,22 +765,43 @@ function render() {
 		renderSignIn();
 		return;
 	}
+	if (storeMode === 'unreachable' || (storeMode === 'cloud' && !loaded && loadError)) {
+		renderUnreachable();
+		return;
+	}
 	if (view.name === 'round' && !findRound(view.roundId) && loaded) view = {name: 'list', roundId: null};
 	if (sheet?.roundId && !findRound(sheet.roundId) && loaded) closeSheet();
 	if (view.name === 'round' && findRound(view.roundId)) renderRound(findRound(view.roundId));
 	else if (view.name === 'regulars') renderRegulars();
 	else renderList();
-	if (storeMode === 'cloud' && view.name === 'regulars') {
+	renderStatus();
+	if (storeMode === 'cloud' && view.name === 'list') {
 		$('foot').innerHTML = '<button data-action="sign-out">Sign out</button>';
 	} else if (storeMode === 'local') {
-		$('foot').textContent = 'Saved on this device only. Add your Supabase keys to config.js to sync across devices.';
+		$('foot').textContent = 'Device-only test mode: config.js has no Supabase keys.';
 	} else {
 		$('foot').textContent = '';
 	}
 }
+function renderStatus() {
+	let msg = '';
+	if (storeMode === 'cloud' && loadError && loaded) msg = 'Offline. Showing your saved copy.';
+	else if (storeMode === 'cloud' && pending.length && syncFailed) msg = `${pending.length} change${pending.length === 1 ? '' : 's'} not synced yet.`;
+	$('status').hidden = !msg;
+	$('status').innerHTML = msg ? `<span>${msg}</span><button data-action="retry">Retry</button>` : '';
+}
+function renderUnreachable() {
+	$('top').innerHTML = '<div class="brand">Tee Sheet</div>';
+	$('main').innerHTML = `<div class="empty"><strong>Can’t reach your tee sheet</strong>
+		<span>Check your connection. If you haven’t used the app in a while, the Supabase project may be paused. Restore it at supabase.com/dashboard.</span>
+		<button class="primary" data-action="retry">Try again</button></div>`;
+	$('status').hidden = true;
+	$('foot').textContent = '';
+	$('bar').hidden = true;
+}
 
 function renderSignIn() {
-	$('top').innerHTML = '<div class="brand">Tee Sheet<small>Your rounds, tee times and who’s in</small></div>';
+	$('top').innerHTML = '<div class="brand">Tee Sheet</div>';
 	if (!$('signInForm')) {
 		$('main').innerHTML = `<div class="auth"><form class="form" id="signInForm" novalidate>
 			<div class="field"><label for="f-email">Email</label><input class="input" type="email" id="f-email" autocomplete="username" inputmode="email" autocapitalize="off"></div>
@@ -740,7 +833,6 @@ function cardHtml(r, past) {
 		c.in ? `<span class="chip in">${c.in} in</span>` : '',
 		c.pending ? `<span class="chip pending">${c.pending} pending</span>` : '',
 		c.out ? `<span class="chip out">${c.out} out</span>` : '',
-		r.example ? '<span class="chip tag">Example</span>' : '',
 	].join('');
 	const tentative = r.tentative && !past;
 	return `<button class="card${past ? ' past' : ''}${tentative ? ' tentative' : ''}${tentative && bookDue(r) ? ' due' : ''}" data-action="open" data-id="${esc(r.id)}">
@@ -753,8 +845,8 @@ function cardHtml(r, past) {
 			${tentative ? `<span class="card-flag">${tentativeLabel(r)}</span>` : ''}
 			<span class="card-top"><span class="card-title">${esc(r.course)}</span><span class="card-when">${esc(relDay(r.date))}</span></span>
 			${r.teeTimes.length
-				? `<span class="card-times">${esc(fmtTimes(r.teeTimes))}</span>`
-				: '<span class="card-times none">No tee times yet</span>'}
+				? `<span class="card-times">${esc(fmtTimes(r.teeTimes))}<span class="card-holes">${r.holes} holes</span></span>`
+				: `<span class="card-times none">No tee times yet · ${r.holes} holes</span>`}
 			${past ? '' : meterHtml(r)}
 			${chips ? `<span class="counts">${chips}</span>` : ''}
 		</span>
@@ -768,11 +860,8 @@ function renderList() {
 	const past = rounds.filter(r => r.date < today).sort((a, b) => byWhen(b, a));
 	const waiting = upcoming.reduce((n, r) => n + counts(r).pending, 0);
 	let html = '';
-	if (rounds.some(r => r.example)) {
-		html += `<div class="notice"><span>Example rounds are showing so you can see how it works.</span><button data-action="clear-examples">Remove examples</button></div>`;
-	}
 	if (!loaded) {
-		html += `<div class="empty"><strong>Loading your rounds…</strong><span>Upcoming tee times will show here.</span></div>`;
+		html += '<div class="empty"><strong>Loading your rounds…</strong></div>';
 	} else if (!upcoming.length) {
 		html += `<div class="section-label">Upcoming</div><div class="empty"><strong>No rounds on the books</strong></div>`;
 	} else {
@@ -785,7 +874,7 @@ function renderList() {
 	}
 	$('main').innerHTML = html;
 	$('barInner').innerHTML = '<button class="primary" data-action="new-round">New round</button>';
-	$('bar').hidden = false;
+	$('bar').hidden = !loaded;
 }
 
 function noteHtml(p) {
@@ -804,18 +893,18 @@ function playerRow(r, p) {
 	return `<li class="player${p.status === 'out' ? ' is-out' : ''}" data-pid="${esc(p.id)}" data-status="${p.status}" data-tee="${esc(tee)}">
 		<span class="grip" data-grip title="Drag to a tee time or another section">${gripIcon}</span>
 		<button class="p-main" data-action="edit-player" data-pid="${esc(p.id)}">
-			<span class="p-name">${esc(p.name)}${isLeague(p) ? '<span class="league">League</span>' : ''}</span>
+			<span class="p-name">${esc(displayName(p))}${isLeague(p) ? '<span class="league">League</span>' : ''}</span>
 			${golferNoteHtml(regularFor(p))}
 			${noteHtml(p)}
 		</button>
-		<button class="pill ${p.status}" data-action="cycle" data-pid="${esc(p.id)}" aria-label="${esc(p.name)} is ${STATUS_LABEL[p.status]}. Tap to change.">${STATUS_LABEL[p.status]}</button>
+		<button class="pill ${p.status}" data-action="cycle" data-pid="${esc(p.id)}" aria-label="${esc(displayName(p))} is ${STATUS_LABEL[p.status]}. Tap to change.">${STATUS_LABEL[p.status]}</button>
 	</li>`;
 }
 function dropZone(status, label) {
 	return `<section class="tee drop-only" data-drop-status="${status}"${status === 'in' ? ' data-drop-tee=""' : ''}><div class="tee-head"><span class="tee-label">${label}</span></div></section>`;
 }
-function openSlot(label) {
-	return `<li><button class="open-slot" data-action="invite-players"><span class="plus" aria-hidden="true">+</span>${label}</button></li>`;
+function openSlot(teeId, label) {
+	return `<li><button class="open-slot" data-action="add-golfers" data-tee="${esc(teeId)}"><span class="plus" aria-hidden="true">+</span>${label}</button></li>`;
 }
 function bookDue(r) {
 	return r.tentative && !!r.bookOn && daysUntil(r.bookOn) <= 0;
@@ -850,7 +939,7 @@ function renderRound(r) {
 	let html = `<div class="round-head">
 			<div class="round-title">
 				<h1 class="course">${esc(r.course)}</h1>
-				<p class="when">${esc(fmtDate(r.date, {weekday: 'long', month: 'long', day: 'numeric'}))} · ${esc(relDay(r.date))}</p>
+				<p class="when">${esc(fmtDate(r.date, {weekday: 'long', month: 'long', day: 'numeric'}))} · ${r.holes} holes · ${esc(relDay(r.date))}</p>
 			</div>
 			<button class="edit-btn" data-action="edit-round" aria-label="Edit round">${icoPencil}Edit</button>
 		</div>
@@ -869,7 +958,7 @@ function renderRound(r) {
 		const over = ps.length > t.spots;
 		let open = '';
 		for (let i = ps.length; i < t.spots; i++) {
-			open += openSlot('Open spot');
+			open += openSlot(t.id, 'Open spot');
 		}
 		html += `<section class="tee" data-drop-status="in" data-drop-tee="${esc(t.id)}" data-full="${ps.length >= t.spots}" aria-label="${esc(fmtTime(t.time))} tee time">
 			<div class="tee-head">
@@ -887,7 +976,7 @@ function renderRound(r) {
 	const unassigned = r.players.filter(p => p.status === 'in' && !teeIds.has(p.teeTimeId)).sort(byStatusThenLeague);
 	if (unassigned.length || !r.teeTimes.length) {
 		html += `<section class="tee" data-drop-status="in" data-drop-tee=""><div class="tee-head"><span class="tee-label">${r.teeTimes.length ? 'No tee time yet' : 'Playing'}</span><span class="tee-fill">${unassigned.length}</span></div>
-			<ul class="slots">${unassigned.map(p => playerRow(r, p)).join('')}${!unassigned.length ? openSlot('Invite players') : ''}</ul></section>`;
+			<ul class="slots">${unassigned.map(p => playerRow(r, p)).join('')}${!unassigned.length ? openSlot('', 'Add golfers') : ''}</ul></section>`;
 	} else {
 		html += dropZone('in', 'No tee time yet');
 	}
@@ -908,20 +997,17 @@ function renderRound(r) {
 		html += dropZone('out', 'Can’t make it');
 	}
 
-	html += `<div class="row-actions">
-		<button class="ghost" data-action="message">Invite text</button>
-	</div>`;
 	$('main').innerHTML = html;
-	$('barInner').innerHTML = '<button class="primary" data-action="invite-players">Invite player</button>';
+	$('barInner').innerHTML = '<button class="primary" data-action="invite-players">Invite golfers</button>';
 	$('bar').hidden = false;
 }
 
 function playedLabel(s) {
 	if (!s.played) return 'No rounds yet';
-	return `${s.played} round${s.played === 1 ? '' : 's'} · latest ${fmtDate(s.last, {month: 'short', day: 'numeric'})}`;
+	return `${s.played} round${s.played === 1 ? '' : 's'} · last ${fmtDate(s.last, {month: 'short', day: 'numeric'})}`;
 }
 function regularRow(g, stats) {
-	return `<li class="player">
+	return `<li class="player" data-search="${esc(g.name.toLowerCase())}">
 		<button class="p-main" data-action="edit-regular" data-gid="${esc(g.id)}">
 			<span class="p-name">${esc(g.name)}${g.league ? '<span class="league">League</span>' : ''}</span>
 			<span class="p-sub">${playedLabel(stats(g))}</span>
@@ -933,18 +1019,28 @@ function regularRow(g, stats) {
 function renderRegulars() {
 	$('top').innerHTML = `<button class="back" data-action="back">${icoBack}Tee Sheet</button>`;
 	const stats = golferStats();
-	const ranked = rankedRegulars();
+	const ranked = rankedRegulars(stats);
 	const league = ranked.filter(g => g.league);
 	const others = ranked.filter(g => !g.league);
+	const archived = regulars.filter(g => g.archived).sort((a, b) => a.name.localeCompare(b.name));
 	let html = '<div class="page-head"><h1 class="course">Golfers</h1></div>';
 	if (!ranked.length) {
 		html += '<div class="empty"><strong>No golfers yet</strong></div>';
+	}
+	if (ranked.length > 8) {
+		html += '<input class="input" type="search" id="f-golfer-search" placeholder="Search golfers" autocomplete="off" aria-label="Search golfers">';
 	}
 	if (league.length) {
 		html += `<div class="section-label">Men’s league · ${league.length}</div><section class="list-card"><ul class="slots">${league.map(g => regularRow(g, stats)).join('')}</ul></section>`;
 	}
 	if (others.length) {
 		html += `<div class="section-label">Others · ${others.length}</div><section class="list-card"><ul class="slots">${others.map(g => regularRow(g, stats)).join('')}</ul></section>`;
+	}
+	if (archived.length) {
+		html += `<div class="section-label"><span>Archived · ${archived.length}</span><button data-action="toggle-archived" aria-expanded="${showArchived}">${showArchived ? 'Hide' : 'Show'}</button></div>`;
+		if (showArchived) {
+			html += `<section class="list-card"><ul class="slots">${archived.map(g => `<li class="player" data-search="${esc(g.name.toLowerCase())}"><span class="p-main"><span class="p-name">${esc(g.name)}</span></span><button class="restore-btn" data-action="restore-regular" data-gid="${esc(g.id)}">Restore</button></li>`).join('')}</ul></section>`;
+		}
 	}
 	$('main').innerHTML = html;
 	$('barInner').innerHTML = '<button class="primary" data-action="add-regular">Add golfer</button>';
@@ -965,6 +1061,7 @@ function openSheet(kind, data) {
 	sheet = {kind, ...data};
 	$('sheet').innerHTML = sheetHtml();
 	$('sheetWrap').hidden = false;
+	if (kind === 'invite-players') updateInvitePanel();
 	fitSheet();
 	document.body.style.overflow = 'hidden';
 	const focusEl = $('sheet').querySelector('[data-autofocus]');
@@ -995,9 +1092,9 @@ function sheetHtml() {
 	if (sheet.kind === 'round') return roundSheet();
 	if (sheet.kind === 'invite-players') return invitePlayersSheet();
 	if (sheet.kind === 'edit-player') return editPlayerSheet();
-	if (sheet.kind === 'message') return messageSheet();
 	if (sheet.kind === 'send-invites') return sendInvitesSheet();
 	if (sheet.kind === 'tee') return teeSheet();
+	if (sheet.kind === 'move') return moveSheet();
 	if (sheet.kind === 'regular') return regularSheet();
 	return '';
 }
@@ -1009,6 +1106,10 @@ function roundSheet() {
 		<datalist id="courseList">${knownCourses().map(c => `<option value="${esc(c)}"></option>`).join('')}</datalist>
 		<div class="field"><label for="f-course">Course</label><input class="input" id="f-course" name="course" list="courseList" autocomplete="off" value="${esc(r?.course ?? '')}" placeholder="e.g. Pine Hollow Golf Club" ${r ? '' : 'data-autofocus'}></div>
 		<div class="field"><label for="f-date">Date</label><div class="picker-wrap"><input class="input" type="date" id="f-date" name="date" value="${esc(r?.date ?? sheet.defaultDate)}"><span class="picker-icon">${icoCalendar}</span></div></div>
+		<div class="field"><span class="lbl" id="holesLbl">Holes</span><div class="seg two" role="radiogroup" aria-labelledby="holesLbl">
+			<input type="radio" name="holes" id="h-18" value="18"${r?.holes === 9 ? '' : ' checked'}><label for="h-18">18 holes</label>
+			<input type="radio" name="holes" id="h-9" value="9"${r?.holes === 9 ? ' checked' : ''}><label for="h-9">9 holes</label>
+		</div></div>
 		<div class="field"><span class="lbl" id="bookingLbl">Tee times are</span><div class="seg two" role="radiogroup" aria-labelledby="bookingLbl">
 			<input type="radio" name="booking" id="bk-booked" value="booked"${r?.tentative ? '' : ' checked'}><label for="bk-booked">Booked</label>
 			<input type="radio" name="booking" id="bk-tentative" value="tentative"${r?.tentative ? ' checked' : ''}><label for="bk-tentative">Tentative</label>
@@ -1017,7 +1118,7 @@ function roundSheet() {
 			<div class="picker-wrap"><input class="input" type="date" id="f-bookon" value="${esc(r?.bookOn ?? '')}"><span class="picker-icon">${icoCalendar}</span></div>
 		</div>
 		${r ? '' : `<div class="field"><span class="lbl">Tee times</span><div class="times">
-			${times.map((t, i) => `<div class="time-row"><div class="picker-wrap"><input class="input" type="time" id="f-time-${esc(t.id)}" data-time-id="${esc(t.id)}" value="${esc(t.time)}" step="60" aria-label="Tee time ${i + 1}"><span class="picker-icon">${icoClock}</span></div><select class="input spots-select" data-spots-id="${esc(t.id)}" aria-label="Players booked for tee time ${i + 1}">${[1, 2, 3, 4].map(n => `<option value="${n}"${t.spots === n ? ' selected' : ''}>${n} player${n === 1 ? '' : 's'}</option>`).join('')}</select><button class="remove-time" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">${icoRemove}</button></div>`).join('')}
+			${times.map((t, i) => `<div class="time-row">${timeField(`f-time-${t.id}`, t.time, `Tee time ${i + 1}`)}<select class="input spots-select" data-spots-id="${esc(t.id)}" aria-label="Golfers booked for tee time ${i + 1}">${spotOptions(t.spots)}</select><button class="remove-time" type="button" data-action="remove-time" data-tid="${esc(t.id)}" aria-label="Remove tee time ${i + 1}">${icoRemove}</button></div>`).join('')}
 			<button class="add-time" type="button" data-action="add-time">+ Add tee time</button>
 		</div></div>`}
 		<div class="field"><label for="f-notes">Notes</label><textarea class="input" id="f-notes" name="notes" placeholder="Carts, green fees, who’s driving…">${esc(r?.notes ?? '')}</textarea></div>
@@ -1027,54 +1128,93 @@ function roundSheet() {
 	</form>`;
 }
 
-function pickRows(r) {
-	const stats = golferStats();
-	return rankedRegulars().filter(g => !onRound(r, g)).map((g, rank) => {
-		const on = sheet.selected.has(g.id);
-		return `<li data-rank="${rank}"><button type="button" class="pick-row${on ? ' on' : ''}" data-action="toggle-pick" data-gid="${esc(g.id)}" data-search="${esc(g.name.toLowerCase())}" aria-pressed="${on}">
+function pickCandidates(r, stats) {
+	const adding = sheet.addTo !== undefined;
+	return rankedRegulars(stats).filter(g => {
+		const p = r.players.find(x => regularFor(x)?.id === g.id);
+		return adding ? p?.status !== 'in' : !p;
+	});
+}
+function pickRows(r, candidates, stats) {
+	return candidates.map(g => {
+		const p = r.players.find(x => regularFor(x)?.id === g.id);
+		const sub = p ? (p.status === 'pending' ? 'Waiting to hear back' : 'Can’t make it') : playedLabel(stats(g));
+		return `<li><button type="button" class="pick-row" data-action="toggle-pick" data-gid="${esc(g.id)}" data-search="${esc(g.name.toLowerCase())}" aria-pressed="false">
 			<span class="tick" aria-hidden="true"></span>
-			<span class="pick-text"><span class="p-name">${esc(g.name)}${g.league ? '<span class="league">League</span>' : ''}</span><span class="p-sub">${playedLabel(stats(g))}</span>${golferNoteHtml(g)}</span>
+			<span class="pick-text"><span class="p-name">${esc(g.name)}${g.league ? '<span class="league">League</span>' : ''}</span><span class="p-sub">${sub}</span>${golferNoteHtml(g)}</span>
 		</button></li>`;
 	}).join('');
 }
-function inviteLabel() {
-	const count = sheet.selected.size + ($('f-name')?.value.trim() ? 1 : 0);
-	return count ? `Invite ${count}` : 'Invite';
+function typedNewName() {
+	const name = $('f-name')?.value.trim() ?? '';
+	if (!name) return '';
+	return regulars.some(g => sheet.selected.has(g.id) && sameName(g.name, name)) ? '' : name;
+}
+function updateInvitePanel() {
+	const count = sheet.selected.size + (typedNewName() ? 1 : 0);
+	const verb = sheet.addTo !== undefined ? 'Add' : 'Invite';
+	$('inviteBtn').textContent = count ? `${verb} ${count}` : verb;
+	$('inviteBtn').disabled = !count;
+	const chips = regulars.filter(g => sheet.selected.has(g.id));
+	$('pickedStrip').hidden = !chips.length;
+	$('pickedStrip').innerHTML = chips.map(g => `<button type="button" class="pick-chip" data-action="toggle-pick" data-gid="${esc(g.id)}" aria-label="Remove ${esc(g.name)}">${esc(g.name)}<span aria-hidden="true">×</span></button>`).join('');
 }
 function invitePlayersSheet() {
 	const r = findRound(sheet.roundId);
-	const available = rankedRegulars().filter(g => !onRound(r, g));
-	const showNew = !available.length;
+	const stats = golferStats();
+	const available = pickCandidates(r, stats);
+	const tee = r.teeTimes.find(t => t.id === sheet.addTo);
+	const title = sheet.addTo === undefined ? 'Invite golfers' : tee ? `Add to ${fmtTime(tee.time)}` : 'Add golfers';
 	let list = '';
-	if (available.length) list = `<section class="list-card picker"><ul class="slots" id="pickList">${pickRows(r)}</ul></section>`;
+	if (available.length) list = `<section class="list-card picker"><ul class="slots" id="pickList">${pickRows(r, available, stats)}</ul></section>`;
 	else if (regulars.length) list = '<p class="hint">All your golfers are already on this round.</p>';
-	return sheetHead('Invite players') + `<form class="form" id="invitePlayersForm" novalidate>
-		<button type="button" class="dashed-btn" id="showNewBtn" data-action="show-new-person"${showNew ? ' hidden' : ''}>+ New golfer</button>
-		<div class="field" id="newPerson"${showNew ? '' : ' hidden'}><label for="f-name">New golfer</label><input class="input" id="f-name" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
+	return sheetHead(title) + `<form class="form" id="invitePlayersForm" novalidate>
+		<button type="button" class="dashed-btn" id="showNewBtn" data-action="show-new-person"${available.length ? '' : ' hidden'}>+ New golfer</button>
+		<div class="field" id="newPerson"${available.length ? ' hidden' : ''}><label for="f-name">New golfer</label><input class="input" id="f-name" autocomplete="off" autocapitalize="words" placeholder="Name"></div>
 		<p class="err" id="formErr" hidden></p>
 		${available.length > 8 ? '<input class="input" type="search" id="f-search" placeholder="Search golfers" autocomplete="off" aria-label="Search golfers">' : ''}
 		${list}
-		<div class="sheet-actions sticky"><button class="primary" type="submit" id="inviteBtn">${inviteLabel()}</button></div>
+		<div class="sheet-actions sticky"><div class="picked" id="pickedStrip" hidden></div><button class="primary" type="submit" id="inviteBtn" disabled>${sheet.addTo === undefined ? 'Invite' : 'Add'}</button></div>
 	</form>`;
 }
 function submitInvitePlayers() {
 	const r = findRound(sheet.roundId);
-	const name = $('f-name').value.trim();
-	const picked = rankedRegulars().filter(g => sheet.selected.has(g.id));
-	const invitees = picked.map(g => ({name: g.name, regularId: g.id}));
+	const adding = sheet.addTo !== undefined;
+	const picked = activeRegulars().filter(g => sheet.selected.has(g.id));
+	const name = typedNewName();
 	if (name) {
-		if (r.players.some(p => sameName(p.name, name))) return showErr(`${name} is already on this round.`);
 		let g = regulars.find(x => sameName(x.name, name));
+		const onIt = r.players.find(p => (g ? regularFor(p)?.id === g.id : sameName(displayName(p), name)));
+		if (onIt && (!adding || onIt.status === 'in')) return showErr(`${name} is already on this round.`);
 		if (!g || g.archived) {
 			g = g ? {...g, archived: false} : {id: uid(), name, league: false};
 			saveDoc('regulars', g);
 		}
-		if (!picked.some(x => x.id === g.id)) invitees.push({name: g.name, regularId: g.id});
+		picked.push(g);
 	}
-	if (!invitees.length) return showErr('Pick at least one golfer, or type a name.');
-	const pids = invitees.map(() => uid());
-	editRound(r.id, x => invitees.forEach((i, n) => {
-		x.players.push({id: pids[n], name: i.name, regularId: i.regularId, status: 'pending', teeTimeId: ''});
+	if (!picked.length) return;
+	if (adding) {
+		const tee = r.teeTimes.find(t => t.id === sheet.addTo);
+		let placed = 0;
+		editRound(r.id, x => picked.forEach(g => {
+			let p = x.players.find(y => regularFor(y)?.id === g.id);
+			if (!p) {
+				p = {id: uid(), name: g.name, regularId: g.id};
+				x.players.push(p);
+			}
+			const room = tee && playersAt(x, tee.id).length < tee.spots;
+			p.status = 'in';
+			p.teeTimeId = room ? tee.id : '';
+			if (room) placed++;
+		}));
+		closeSheet();
+		const where = tee && placed === picked.length ? fmtTime(tee.time) : 'the round';
+		toast(picked.length === 1 ? `${picked[0].name}: In · ${where === 'the round' ? 'no tee time yet' : where}` : `Added ${picked.length} golfers to ${where}`);
+		return;
+	}
+	const pids = picked.map(() => uid());
+	editRound(r.id, x => picked.forEach((g, n) => {
+		x.players.push({id: pids[n], name: g.name, regularId: g.id, status: 'pending', teeTimeId: ''});
 	}));
 	openSheet('send-invites', {roundId: r.id, pids, sent: new Set(), text: inviteText(findRound(r.id))});
 }
@@ -1116,59 +1256,70 @@ function editPlayerSheet() {
 	const p = r.players.find(x => x.id === sheet.pid);
 	if (!p) return '';
 	const g = regularFor(p);
-	return sheetHead(p.name) + `<form class="form" id="editPlayerForm" novalidate>
-		<div class="field"><label for="f-name">Name</label><input class="input" id="f-name" name="name" autocomplete="off" autocapitalize="words" value="${esc(p.name)}"></div>
+	return sheetHead(displayName(p)) + `<form class="form" id="editPlayerForm" novalidate>
+		${g ? '' : `<div class="field"><label for="f-name">Name</label><input class="input" id="f-name" name="name" autocomplete="off" autocapitalize="words" value="${esc(p.name)}"></div>`}
 		${statusSeg(p.status)}
 		<div class="field"><label for="f-note">Note</label><textarea class="input note-box" id="f-note" rows="2" placeholder="e.g. Needs the later tee time, or still confirming">${esc(p.note || '')}</textarea></div>
 		${g ? `<div class="field"><label for="f-gnote">Golfer note · every round</label><textarea class="input note-box" id="f-gnote" rows="2" placeholder="e.g. Out until November">${esc(g.note)}</textarea></div>` : ''}
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions"><button class="primary" type="submit">Save</button>
-			<button class="danger-btn${sheet.armed ? ' armed' : ''}" type="button" data-action="remove-player">${sheet.armed ? `Tap again to remove ${esc(p.name)}` : 'Remove from round'}</button>
+			<button class="danger-btn${sheet.armed ? ' armed' : ''}" type="button" data-action="remove-player">${sheet.armed ? `Tap again to remove ${esc(displayName(p))}` : 'Remove from round'}</button>
 		</div>
 	</form>`;
 }
 
-function messageSheet() {
-	return sheetHead('Invite text') + `<div class="form">
-		<textarea class="input message-box" id="f-message" aria-label="Invite text">${esc(sheet.text)}</textarea>
-		<p class="hint" id="copyHint" hidden>Copying didn’t work in this browser. The text is selected, so copy it yourself.</p>
-		<div class="sheet-actions two">
-			<button class="secondary" type="button" data-action="copy-message">Copy text</button>
-			<button class="primary with-icon" type="button" data-action="text-message">${icoMessage}Text it</button>
-		</div>
-	</div>`;
-}
 function teeSheet() {
 	const t = findRound(sheet.roundId).teeTimes.find(x => x.id === sheet.teeId);
 	if (!t) return '';
 	return sheetHead(`${fmtTime(t.time)} tee time`) + `<form class="form" id="teeForm" novalidate>
-		<div class="field"><label for="f-tee-time">Time</label><div class="picker-wrap"><input class="input" type="time" id="f-tee-time" value="${esc(t.time)}" step="60"><span class="picker-icon">${icoClock}</span></div></div>
-		<div class="field"><label for="f-tee-spots">Players booked</label><select class="input" id="f-tee-spots">${[1, 2, 3, 4].map(n => `<option value="${n}"${t.spots === n ? ' selected' : ''}>${n} player${n === 1 ? '' : 's'}</option>`).join('')}</select></div>
+		<div class="field"><label for="f-tee-time">Time</label>${timeField('f-tee-time', t.time, 'Tee time')}</div>
+		<div class="field"><label for="f-tee-spots">Golfers booked</label><select class="input" id="f-tee-spots">${spotOptions(t.spots)}</select></div>
 		<p class="err" id="formErr" hidden></p>
 		<div class="sheet-actions"><button class="primary" type="submit">Save</button></div>
 	</form>`;
 }
 function submitTee() {
-	const time = $('f-tee-time').value;
-	if (!time) return showErr('Pick a time.');
+	const time = readTime('f-tee-time');
+	if (!time) return showErr('Enter a time like 8:07 AM.');
 	const spots = Number($('f-tee-spots').value);
 	editRound(sheet.roundId, x => {
 		Object.assign(x.teeTimes.find(t => t.id === sheet.teeId), {time, spots});
 	});
 	closeSheet();
-	toast(`Tee time updated: ${fmtTime(time)}, ${spots} player${spots === 1 ? '' : 's'}`);
+	toast(`Tee time updated: ${fmtTime(time)}, ${spots} golfer${spots === 1 ? '' : 's'}`);
+}
+function moveSheet() {
+	const r = findRound(sheet.roundId);
+	const p = r.players.find(x => x.id === sheet.pid);
+	if (!p) return '';
+	const currentTee = p.status === 'in' && r.teeTimes.some(t => t.id === p.teeTimeId) ? p.teeTimeId : '';
+	const row = (status, tee, label, sub, full) => {
+		const here = p.status === status && (status !== 'in' || currentTee === tee);
+		return `<li><button type="button" class="move-row" data-action="move-to" data-status="${status}" data-tee="${esc(tee)}"${here || full ? ' disabled' : ''}>
+			<span class="p-name">${label}</span>${here ? '<span class="p-sub">Here now</span>' : sub ? `<span class="p-sub">${sub}</span>` : ''}</button></li>`;
+	};
+	const rows = [
+		...r.teeTimes.map(t => {
+			const n = playersAt(r, t.id).length;
+			return row('in', t.id, fmtTime(t.time), `${n} of ${t.spots}`, n >= t.spots);
+		}),
+		row('in', '', r.teeTimes.length ? 'No tee time yet' : 'Playing', '', false),
+		row('pending', '', 'Waiting to hear back', '', false),
+		row('out', '', 'Can’t make it', '', false),
+	];
+	return sheetHead(`Move ${displayName(p)}`) + `<section class="list-card"><ul class="slots">${rows.join('')}</ul></section>`;
 }
 function sendRow(p) {
 	const sent = sheet.sent.has(p.id);
 	return `<li class="player send-row${sent ? ' is-sent' : ''}">
-		<span class="p-main"><span class="p-name">${esc(p.name)}</span></span>
+		<span class="p-main"><span class="p-name">${esc(displayName(p))}</span></span>
 		<button class="text-link" type="button" data-action="text-golfer" data-pid="${esc(p.id)}">${sent ? `${icoCheck}Texted` : `${icoMessage}Text`}</button>
 	</li>`;
 }
 function sendInvitesSheet() {
 	const r = findRound(sheet.roundId);
 	const players = sheet.pids.map(pid => r.players.find(p => p.id === pid)).filter(Boolean);
-	return sheetHead(players.length === 1 ? `Invited ${players[0].name}` : `Invited ${players.length} golfers`) + `<div class="form">
+	return sheetHead(players.length === 1 ? `Invited ${displayName(players[0])}` : `Invited ${players.length} golfers`) + `<div class="form">
 		<div class="field"><label for="f-message">Message</label><textarea class="input message-box" id="f-message">${esc(sheet.text)}</textarea></div>
 		<section class="list-card"><ul class="slots" id="sendList">${players.map(sendRow).join('')}</ul></section>
 		<div class="sheet-actions"><button class="primary" type="button" data-action="close-sheet">Done</button></div>
@@ -1187,10 +1338,37 @@ function showErr(msg) {
 	el.hidden = false;
 }
 
+const TIME_OPTIONS = Array.from({length: 91}, (_, i) => `${pad(Math.floor((300 + i * 10) / 60))}:${pad((300 + i * 10) % 60)}`);
+function timeField(id, value, label) {
+	const options = TIME_OPTIONS.includes(value) || !value ? TIME_OPTIONS : [...TIME_OPTIONS, value].sort();
+	return `<div class="time-field"><select class="input" id="${esc(id)}" data-time-select aria-label="${esc(label)}">
+		${options.map(t => `<option value="${t}"${t === value ? ' selected' : ''}>${fmtTime(t)}</option>`).join('')}
+		<option value="type">Type a time…</option>
+	</select><input class="input" id="${esc(id)}-typed" placeholder="e.g. 8:07 AM" autocomplete="off" aria-label="${esc(label)}" hidden></div>`;
+}
+function parseTime(text) {
+	const m = text.trim().toLowerCase().match(/^(\d{1,2})(?::?(\d{2}))?\s*([ap])?\.?m?\.?$/);
+	if (!m) return '';
+	let h = Number(m[1]);
+	const min = Number(m[2] ?? 0);
+	if (h > 23 || min > 59) return '';
+	if (m[3] === 'p' && h < 12) h += 12;
+	if (m[3] === 'a' && h === 12) h = 0;
+	if (!m[3] && h >= 1 && h <= 5) h += 12;
+	return `${pad(h)}:${pad(min)}`;
+}
+function readTime(id) {
+	return $(id).value === 'type' ? parseTime($(`${id}-typed`).value) : $(id).value;
+}
+function spotOptions(current) {
+	return [1, 2, 3, 4].map(n => `<option value="${n}"${current === n ? ' selected' : ''}>${n} golfer${n === 1 ? '' : 's'}</option>`).join('');
+}
 function readRoundTimes() {
-	$('sheet').querySelectorAll('[data-time-id]').forEach(inp => {
-		const t = sheet.times.find(x => x.id === inp.dataset.timeId);
-		if (t) t.time = inp.value;
+	sheet.times?.forEach(t => {
+		if (!$(`f-time-${t.id}`)) return;
+		const time = readTime(`f-time-${t.id}`);
+		t.invalid = !time;
+		if (time) t.time = time;
 	});
 	$('sheet').querySelectorAll('[data-spots-id]').forEach(sel => {
 		const t = sheet.times.find(x => x.id === sel.dataset.spotsId);
@@ -1204,6 +1382,7 @@ function keepRoundDraft() {
 		notes: $('f-notes').value,
 		tentative: $('bk-tentative').checked,
 		bookOn: $('f-bookon').value,
+		holes: $('h-9').checked ? 9 : 18,
 	};
 }
 function restoreRoundDraft() {
@@ -1214,6 +1393,7 @@ function restoreRoundDraft() {
 	$(sheet.draft.tentative ? 'bk-tentative' : 'bk-booked').checked = true;
 	$('bookOnField').hidden = !sheet.draft.tentative;
 	$('f-bookon').value = sheet.draft.bookOn;
+	$(sheet.draft.holes === 9 ? 'h-9' : 'h-18').checked = true;
 }
 
 function submitRound() {
@@ -1222,13 +1402,16 @@ function submitRound() {
 	const date = $('f-date').value;
 	if (!course) return showErr('Add the course name.');
 	if (!date) return showErr('Pick a date.');
+	if (sheet.times?.some(t => t.invalid)) return showErr('Enter tee times like 8:07 AM.');
 	const notes = $('f-notes').value.trim();
+	const holes = $('h-9').checked ? 9 : 18;
 	const tentative = $('bk-tentative').checked;
 	const bookOn = tentative ? $('f-bookon').value : '';
 	if (sheet.roundId) {
 		editRound(sheet.roundId, r => {
 			r.course = course;
 			r.date = date;
+			r.holes = holes;
 			r.notes = notes;
 			r.tentative = tentative;
 			r.bookOn = bookOn;
@@ -1240,7 +1423,7 @@ function submitRound() {
 	const teeTimes = sheet.times.filter(t => t.time).map(t => ({id: t.id, time: t.time, spots: t.spots}));
 	const sorted = [...teeTimes].sort((a, b) => a.time.localeCompare(b.time));
 	const players = [{id: uid(), name: OWNER_NAME, status: 'in', teeTimeId: sorted[0]?.id ?? ''}];
-	const round = {id: uid(), course, date, notes, tentative, bookOn, teeTimes, players, example: false};
+	const round = {id: uid(), course, date, holes, notes, tentative, bookOn, teeTimes, players};
 	saveDoc('rounds', round);
 	closeSheet();
 	view = {name: 'round', roundId: round.id};
@@ -1250,13 +1433,14 @@ function submitRound() {
 
 
 function submitEditPlayer() {
-	const name = $('f-name').value.trim();
-	if (!name) return showErr('Add a name.');
 	const r = findRound(sheet.roundId);
-	if (r.players.some(p => p.id !== sheet.pid && p.name.toLowerCase() === name.toLowerCase())) return showErr(`${name} is already on this round.`);
+	const player = r.players.find(p => p.id === sheet.pid);
+	const g = regularFor(player);
+	const name = $('f-name') ? $('f-name').value.trim() : player.name;
+	if (!name) return showErr('Add a name.');
+	if (r.players.some(p => p.id !== sheet.pid && sameName(displayName(p), name))) return showErr(`${name} is already on this round.`);
 	const status = $('sheet').querySelector('input[name="status"]:checked')?.value;
 	const note = $('f-note').value.trim();
-	const g = regularFor(r.players.find(p => p.id === sheet.pid));
 	if (g) {
 		const golferNote = $('f-gnote').value.trim();
 		if (golferNote !== g.note) saveDoc('regulars', {...g, note: golferNote});
@@ -1272,8 +1456,8 @@ function submitEditPlayer() {
 function inviteText(r) {
 	const day = fmtDate(r.date, {weekday: 'short', month: 'short', day: 'numeric'});
 	const tee = r.teeTimes.find(t => t.id === firstOpenTee(r)) || r.teeTimes[0];
-	if (r.tentative) return `Thinking about playing ${r.course} on ${day}${tee ? ` around ${fmtTime(tee.time)}` : ''}, you interested?`;
-	return `Playing ${r.course} on ${day}${tee ? ` at ${fmtTime(tee.time)}` : ''}, you in?`;
+	if (r.tentative) return `Thinking about playing ${r.holes} holes at ${r.course} on ${day}${tee ? ` around ${fmtTime(tee.time)}` : ''}, you interested?`;
+	return `Playing ${r.holes} holes at ${r.course} on ${day}${tee ? ` at ${fmtTime(tee.time)}` : ''}, you in?`;
 }
 
 let toastTimer = null;
@@ -1307,9 +1491,12 @@ document.addEventListener('click', ev => {
 	} else if (action === 'toggle-past') {
 		showPast = !showPast;
 		render();
-	} else if (action === 'clear-examples') {
-		rounds.filter(x => x.example).forEach(x => deleteDoc('rounds', x.id));
-		toast('Examples removed');
+	} else if (action === 'retry') {
+		if (storeMode === 'unreachable') location.reload();
+		else {
+			syncFailed = false;
+			fetchAll();
+		}
 	} else if (action === 'new-round') {
 		const nextSat = new Date();
 		nextSat.setDate(nextSat.getDate() + ((6 - nextSat.getDay() + 7) % 7 || 7));
@@ -1329,6 +1516,7 @@ document.addEventListener('click', ev => {
 		toast(`Added the ${fmtTime(time)} tee time`);
 	} else if (action === 'remove-tee' && r) {
 		const tee = r.teeTimes.find(t => t.id === btn.dataset.tee);
+		if (!tee) return;
 		if (armedTee !== tee.id) {
 			armedTee = tee.id;
 			render();
@@ -1375,6 +1563,8 @@ document.addEventListener('click', ev => {
 		toast('Round deleted');
 	} else if (action === 'invite-players' && r) {
 		openSheet('invite-players', {roundId: r.id, selected: new Set()});
+	} else if (action === 'add-golfers' && r) {
+		openSheet('invite-players', {roundId: r.id, selected: new Set(), addTo: btn.dataset.tee});
 	} else if (action === 'mark-booked' && r) {
 		editRound(r.id, x => {
 			x.tentative = false;
@@ -1386,8 +1576,6 @@ document.addEventListener('click', ev => {
 		sheet.sent.add(btn.dataset.pid);
 		btn.innerHTML = `${icoCheck}Texted`;
 		btn.closest('li').classList.add('is-sent');
-	} else if (action === 'text-message') {
-		openMessages(sheet.text);
 	} else if (action === 'show-new-person') {
 		$('newPerson').hidden = false;
 		btn.hidden = true;
@@ -1396,17 +1584,21 @@ document.addEventListener('click', ev => {
 		const id = btn.dataset.gid;
 		if (sheet.selected.has(id)) sheet.selected.delete(id);
 		else sheet.selected.add(id);
-		btn.classList.toggle('on', sheet.selected.has(id));
-		btn.setAttribute('aria-pressed', sheet.selected.has(id));
-		$('inviteBtn').textContent = inviteLabel();
-		const list = $('pickList');
-		const picked = li => (sheet.selected.has(li.firstElementChild.dataset.gid) ? 0 : 1);
-		[...list.children].sort((a, b) => picked(a) - picked(b) || a.dataset.rank - b.dataset.rank).forEach(li => list.appendChild(li));
-		if ($('f-search')?.value) {
-			$('f-search').value = '';
-			list.querySelectorAll('li').forEach(li => { li.hidden = false; });
-			list.scrollIntoView({block: 'nearest'});
+		sheet.dirty = true;
+		const row = $('pickList')?.querySelector(`.pick-row[data-gid="${CSS.escape(id)}"]`);
+		row?.classList.toggle('on', sheet.selected.has(id));
+		row?.setAttribute('aria-pressed', sheet.selected.has(id));
+		updateInvitePanel();
+		const search = $('f-search');
+		if (search?.value && row === btn) {
+			search.value = '';
+			$('pickList').querySelectorAll('li').forEach(li => { li.hidden = false; });
+			search.focus({preventScroll: true});
 		}
+	} else if (action === 'move-to' && r) {
+		const pid = sheet.pid;
+		closeSheet();
+		moveGolfer(r.id, pid, btn.dataset.status, btn.dataset.tee);
 	} else if (action === 'edit-player' && r) {
 		openSheet('edit-player', {roundId: r.id, pid: btn.dataset.pid});
 	} else if (action === 'remove-player') {
@@ -1431,24 +1623,17 @@ document.addEventListener('click', ev => {
 			setStatus(p, NEXT_STATUS[p.status]);
 		});
 		toast(statusToast(findRound(r.id), pid));
-	} else if (action === 'message' && r) {
-		openSheet('message', {roundId: r.id, text: inviteText(r)});
-	} else if (action === 'copy-message') {
-		const box = $('f-message');
-		const fallback = () => {
-			$('copyHint').hidden = false;
-			box.focus();
-			box.select();
-		};
-		if (navigator.clipboard?.writeText) {
-			navigator.clipboard.writeText(box.value).then(() => toast('Copied'), fallback);
-		} else {
-			fallback();
-		}
 	} else if (action === 'regulars') {
 		view = {name: 'regulars', roundId: null};
 		render();
 		window.scrollTo(0, 0);
+	} else if (action === 'toggle-archived') {
+		showArchived = !showArchived;
+		render();
+	} else if (action === 'restore-regular') {
+		const g = regulars.find(x => x.id === btn.dataset.gid);
+		saveDoc('regulars', {...g, archived: false});
+		toast(`Restored ${g.name}`);
 	} else if (action === 'add-regular') {
 		openSheet('regular', {gid: null, league: false});
 	} else if (action === 'edit-regular') {
@@ -1484,21 +1669,31 @@ document.addEventListener('submit', ev => {
 
 document.addEventListener('input', ev => {
 	const id = ev.target.id;
-	if (id === 'f-search') {
+	if (id === 'f-golfer-search') {
+		const q = ev.target.value.trim().toLowerCase();
+		$('main').querySelectorAll('li[data-search]').forEach(li => { li.hidden = !li.dataset.search.includes(q); });
+	} else if (id === 'f-search') {
 		const q = ev.target.value.trim().toLowerCase();
 		$('pickList')?.querySelectorAll('[data-search]').forEach(row => { row.closest('li').hidden = !row.dataset.search.includes(q); });
 	} else if (id === 'f-name' && $('inviteBtn')) {
-		$('inviteBtn').textContent = inviteLabel();
+		updateInvitePanel();
 	} else if (id === 'f-message') {
 		sheet.text = ev.target.value;
 	}
+	if (sheet && id !== 'f-search' && ev.target.closest('#sheet')) sheet.dirty = true;
 });
 
 document.addEventListener('change', ev => {
+	if (sheet && ev.target.closest('#sheet')) sheet.dirty = true;
+	if (ev.target.matches('[data-time-select]')) {
+		const typed = $(`${ev.target.id}-typed`);
+		typed.hidden = ev.target.value !== 'type';
+		if (!typed.hidden) typed.focus();
+	}
 	if (ev.target.name === 'booking' && $('bookOnField')) $('bookOnField').hidden = ev.target.value !== 'tentative';
 });
 
-/* Drag a golfer by its grip onto another golfer (swap tee times) or onto a group with room (move) */
+/* Drag a golfer by its grip onto a section to set their status (tee times and No tee time yet = In, Waiting = Pending, Can't make it = Out), or onto a golfer in a tee time to swap */
 function dropTargetAt(x, y) {
 	const el = document.elementFromPoint(x, y);
 	const row = el?.closest('.player[data-status="in"]');
@@ -1540,23 +1735,35 @@ function endDrag(commit) {
 		render();
 		return;
 	}
+	if (target.type !== 'swap') {
+		moveGolfer(r.id, pid, target.status, target.tee);
+		return;
+	}
 	const name = nameOf(r, pid);
-	const other = target.type === 'swap' ? nameOf(r, target.pid) : '';
-	const status = target.type === 'swap' ? 'in' : target.status;
-	const destTee = target.type === 'swap' ? r.players.find(p => p.id === target.pid).teeTimeId : target.tee;
-	const tee = r.teeTimes.find(t => t.id === destTee);
+	const other = nameOf(r, target.pid);
+	const destTee = r.players.find(p => p.id === target.pid).teeTimeId;
 	editRound(r.id, x => {
 		const a = x.players.find(p => p.id === pid);
-		if (target.type === 'swap') {
-			const b = x.players.find(p => p.id === target.pid);
-			b.teeTimeId = fromStatus === 'in' ? a.teeTimeId : '';
-		}
-		a.status = status;
-		a.teeTimeId = status === 'in' ? destTee : '';
+		const b = x.players.find(p => p.id === target.pid);
+		b.teeTimeId = fromStatus === 'in' ? a.teeTimeId : '';
+		a.status = 'in';
+		a.teeTimeId = destTee;
 	});
-	if (target.type === 'swap') toast(fromStatus === 'in' ? `Swapped ${name} and ${other}` : `${name}: In · ${fmtTime(tee.time)}. ${other} has no tee time yet.`);
-	else if (status !== 'in') toast(`${name}: ${STATUS_LABEL[status]}`);
-	else if (tee) toast(fromStatus === 'in' ? `Moved ${name} to ${fmtTime(tee.time)}` : `${name}: In · ${fmtTime(tee.time)}`);
+	toast(fromStatus === 'in' ? `Swapped ${name} and ${other}` : `${name}: In · ${fmtTime(r.teeTimes.find(t => t.id === destTee).time)}. ${other} has no tee time yet.`);
+}
+function moveGolfer(roundId, pid, status, teeId) {
+	const r = findRound(roundId);
+	const p = r.players.find(x => x.id === pid);
+	const wasIn = p.status === 'in';
+	const tee = r.teeTimes.find(t => t.id === teeId);
+	const name = displayName(p);
+	editRound(roundId, x => {
+		const y = x.players.find(z => z.id === pid);
+		y.status = status;
+		y.teeTimeId = status === 'in' ? teeId : '';
+	});
+	if (status !== 'in') toast(`${name}: ${STATUS_LABEL[status]}`);
+	else if (tee) toast(wasIn ? `Moved ${name} to ${fmtTime(tee.time)}` : `${name}: In · ${fmtTime(tee.time)}`);
 	else toast(r.teeTimes.length ? `${name}: In · no tee time yet` : `${name}: In`);
 }
 
@@ -1597,7 +1804,7 @@ function setSwipe(dy, animate) {
 }
 $('sheet').addEventListener('touchstart', ev => {
 	if (ev.touches.length !== 1 || ev.target.closest('input, textarea, select')) return;
-	if ($('sheet').scrollTop > 0 && !ev.target.closest('.sheet-head')) return;
+	if (($('sheet').scrollTop > 0 || sheet?.dirty) && !ev.target.closest('.sheet-head')) return;
 	swipe = {y: ev.touches[0].clientY, t: Date.now(), dy: 0};
 }, {passive: true});
 $('sheet').addEventListener('touchmove', ev => {
@@ -1629,6 +1836,79 @@ $('sheet').addEventListener('touchcancel', () => {
 	setSwipe(0, true);
 });
 
+/* Long-press a golfer on a round to move them without dragging */
+let press = null;
+function openMoveSheet(pid) {
+	if (view.name === 'round') openSheet('move', {roundId: view.roundId, pid});
+}
+document.addEventListener('touchstart', ev => {
+	const main = ev.target.closest('.player[data-pid] .p-main');
+	if (!main || sheet) return;
+	const pid = main.dataset.pid;
+	press = {x: ev.touches[0].clientX, y: ev.touches[0].clientY, fired: false};
+	press.timer = setTimeout(() => {
+		press.fired = true;
+		navigator.vibrate?.(15);
+		openMoveSheet(pid);
+	}, 500);
+}, {passive: true});
+document.addEventListener('touchmove', ev => {
+	if (!press || press.fired) return;
+	const t = ev.touches[0];
+	if (Math.abs(t.clientX - press.x) > 10 || Math.abs(t.clientY - press.y) > 10) {
+		clearTimeout(press.timer);
+		press = null;
+	}
+}, {passive: true});
+document.addEventListener('touchend', ev => {
+	if (!press) return;
+	clearTimeout(press.timer);
+	if (press.fired) ev.preventDefault();
+	press = null;
+}, {passive: false});
+document.addEventListener('contextmenu', ev => {
+	const main = ev.target.closest('.player[data-pid] .p-main');
+	if (!main) return;
+	ev.preventDefault();
+	if (!sheet) openMoveSheet(main.dataset.pid);
+});
+
+/* Pull down at the top of the page to refresh */
+let pull = null;
+function showPull(dy, label) {
+	$('pull').textContent = label;
+	$('pull').style.transform = `translate(-50%, ${Math.min(dy / 2, 50) - 60}px)`;
+}
+document.addEventListener('touchstart', ev => {
+	if (sheet || drag || window.scrollY > 0 || ev.target.closest('[data-grip]')) return;
+	pull = {y: ev.touches[0].clientY, dy: 0};
+}, {passive: true});
+document.addEventListener('touchmove', ev => {
+	if (!pull) return;
+	const dy = ev.touches[0].clientY - pull.y;
+	if ((!pull.dy && dy <= 0) || window.scrollY > 0) {
+		pull = null;
+		return;
+	}
+	if (!pull.dy && dy < 8) return;
+	ev.preventDefault();
+	pull.dy = dy;
+	showPull(dy, dy > 140 ? 'Release to refresh' : 'Pull to refresh');
+}, {passive: false});
+document.addEventListener('touchend', async () => {
+	if (!pull) return;
+	const {dy} = pull;
+	pull = null;
+	if (dy <= 140) {
+		$('pull').style.transform = '';
+		return;
+	}
+	showPull(140, 'Refreshing…');
+	syncFailed = false;
+	await fetchAll();
+	$('pull').style.transform = '';
+});
+
 document.addEventListener('keydown', ev => {
 	if (ev.key === 'Escape' && sheet) closeSheet();
 });
@@ -1647,13 +1927,13 @@ async function onSession(session) {
 		storeMode = 'auth';
 		rounds = [];
 		regulars = [];
+		pending = [];
 		view = {name: 'list', roundId: null};
 		render();
 		return;
 	}
 	storeMode = 'cloud';
-	loaded = false;
-	$('main').innerHTML = '';
+	loaded = loadCache();
 	render();
 	await fetchAll();
 	channel = sb.channel('rounds-' + id)
@@ -1692,10 +1972,16 @@ function start() {
 	if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 	reloadIfUpdated();
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible') reloadIfUpdated();
+		if (document.visibilityState !== 'visible') return;
+		reloadIfUpdated();
+		fetchAll();
 	});
+	window.addEventListener('online', fetchAll);
+	setInterval(() => {
+		if (pending.length) flush();
+	}, 30000);
 	const cfg = window.TEE_SHEET_CONFIG || {};
-	if (!cfg.supabaseUrl || !cfg.supabaseKey || !window.supabase) {
+	if (!cfg.supabaseUrl || !cfg.supabaseKey) {
 		storeMode = 'local';
 		rounds = lsRead('rounds');
 		regulars = lsRead('regulars');
@@ -1703,13 +1989,15 @@ function start() {
 		render();
 		return;
 	}
+	if (!window.supabase) {
+		storeMode = 'unreachable';
+		render();
+		return;
+	}
 	sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
 	render();
 	sb.auth.onAuthStateChange((event, session) => {
 		setTimeout(() => onSession(session), 0);
-	});
-	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible') fetchAll();
 	});
 }
 
